@@ -23,7 +23,7 @@ jobs:
           arguments: test --continue --no-daemon --parallel
 
       - uses: dorny/test-reporter@v1.9.0
-        if: asuccess() || failure()
+        if: success() || failure()
         with:
           name: tests
           path: "**/**/build/test-results/test/TEST-*.xml"
