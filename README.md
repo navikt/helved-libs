@@ -1,4 +1,4 @@
-![img](logo.jpeg)
+![img](banner.png)
 
 # Libraries
 All libraries are released with the same version for convenience.
