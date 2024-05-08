@@ -11,7 +11,7 @@ allprojects {
 }
 
 subprojects {
-    group = "navikt.helved.libs"
+    group = "navikt.helved-libs"
 
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "maven-publish")
