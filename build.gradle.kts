@@ -8,9 +8,6 @@ allprojects {
     repositories {
         mavenCentral()
     }
-    kotlin {
-        jvmToolchain(21)
-    }
 }
 
 subprojects {
