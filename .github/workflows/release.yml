@@ -23,7 +23,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
       - run: ./gradlew test --continue --no-daemon --parallel
 
-      - uses: dorny/test-reporter@v1.9.0
+      - uses: dorny/test-reporter@v1.9.1
         if: success() || failure()
         with:
           name: tests
