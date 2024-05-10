@@ -6,5 +6,5 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation("org.glassfish.jaxb:jaxb-runtime:2.3.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
