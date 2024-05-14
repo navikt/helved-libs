@@ -8,5 +8,5 @@ dependencies {
 
 
     testImplementation(kotlin("test"))
-    testImplementation("org.testcontainers:testcontainers:1.19.7")
+    testImplementation("org.testcontainers:testcontainers:1.19.8")
 }
