@@ -4,7 +4,7 @@ dependencies {
     api(project(":libs:utils"))
     api(project(":libs:postgres"))
 
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 
     testImplementation(kotlin("test"))
     testImplementation(project(":libs:job"))
