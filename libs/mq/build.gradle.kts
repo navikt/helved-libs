@@ -4,7 +4,7 @@ dependencies {
 
     api("com.ibm.mq:com.ibm.mq.allclient:9.3.5.1")
 
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 
 
     testImplementation(kotlin("test"))
