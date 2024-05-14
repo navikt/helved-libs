@@ -4,5 +4,5 @@ dependencies {
     api(project(":libs:utils"))
     api(project(":libs:http"))
 
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.17.0")
+    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.17.1")
 }
