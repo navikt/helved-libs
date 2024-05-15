@@ -23,11 +23,13 @@ data class StsConfig(
     val pass: String,
 )
 
+typealias ProxyAuthProvider = suspend () -> String
+
 class StsClient(
     private val config: StsConfig,
     private val http: HttpClient = HttpClientFactory.new(),
     private val jackson: ObjectMapper = jacksonObjectMapper(),
-    private val proxyAuth: (() -> String)? = null,
+    private val proxyAuth: ProxyAuthProvider? = null,
 ) : Sts {
     override suspend fun samlToken(): SamlToken {
         val response = http.get("${config.host}/rest/v1/sts/samltoken") {
