@@ -24,6 +24,7 @@ class SoapClient(
     private val config: SoapConfig,
     private val sts: Sts,
     private val http: HttpClient = HttpClientFactory.new(),
+    private val proxyAuth: (() -> String)? = null,
 ) : Soap {
     override suspend fun call(
         action: String,
@@ -42,6 +43,7 @@ class SoapClient(
         val res = http.post(config.host) {
             contentType(ContentType.Application.Xml)
             header("SOAPAction", action)
+            proxyAuth?.let { it -> header("X-Proxy-Authorization", it()) }
             setBody(xml)
         }
 
