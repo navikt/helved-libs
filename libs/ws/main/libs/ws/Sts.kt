@@ -34,7 +34,6 @@ class StsClient(
     override suspend fun samlToken(): SamlToken {
         val response = http.get("${config.host}/rest/v1/sts/samltoken") {
             basicAuth(config.user, config.pass)
-            contentType(ContentType.Application.Json)
             proxyAuth?.let { it -> header("X-Proxy-Authorization", it()) }
         }
 
