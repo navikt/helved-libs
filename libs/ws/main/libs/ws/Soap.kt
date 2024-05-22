@@ -5,7 +5,6 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
 import libs.http.HttpClientFactory
 import libs.utils.Resource
 import java.net.URL
@@ -24,13 +23,14 @@ class SoapClient(
     private val config: SoapConfig,
     private val sts: Sts,
     private val http: HttpClient = HttpClientFactory.new(),
-    private val proxyAuth: (() -> String)? = null,
+    private val proxyAuth: ProxyAuthProvider? = null,
 ) : Soap {
     override suspend fun call(
         action: String,
         body: String,
     ): String {
         val token = sts.samlToken()
+        val proxyAuth = proxyAuth?.invoke()
 
         val xml = SoapXml.envelope(
             action = action,
@@ -41,10 +41,9 @@ class SoapClient(
         )
 
         val res = http.post(config.host) {
+            proxyAuth?.let { header("X-Proxy-Authorization", it) }
             header("Content-Type", "text/xml")
             header("Accept", "*/*")
-//            header("SOAPAction", action)
-            proxyAuth?.let { it -> header("X-Proxy-Authorization", it()) }
             setBody(xml)
         }
 
@@ -62,7 +61,7 @@ object SoapXml {
     ): String = Resource.read("/envelope.xml")
         .replace("\$action", action)
         .replace("\$messageId", messageId.toString())
-        .replace("\$serviceUrl", serviceUrl.toString())
+        .replace("\$serviceUrl", "https://cics-q1.adeo.no/oppdrag/simulerFpServiceWSBinding") // FIXME: production ready
         .replace("\$assertion", assertion)
         .replace("\$body", body)
 }
