@@ -56,7 +56,7 @@ class StsClient(
             }
 
             SamlToken(
-                token = Base64.getDecoder().decode(accessToken).decodeToString(),
+                token = String(Base64.getDecoder().decode(accessToken)).replace("&#13;\n", ""),
                 expirationTime = LocalDateTime.now().plusSeconds(expiresIn)
             )
         }
