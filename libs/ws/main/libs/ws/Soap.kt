@@ -41,9 +41,9 @@ class SoapClient(
         )
 
         val res = http.post(config.host) {
-            header("Content-Type", "text/xml; charset=UTF-8")
-            header("Accept", "text/xml; charset=UTF-8")
-            header("SOAPAction", action)
+            header("Content-Type", "text/xml")
+            header("Accept", "*/*")
+//            header("SOAPAction", action)
             proxyAuth?.let { it -> header("X-Proxy-Authorization", it()) }
             setBody(xml)
         }
