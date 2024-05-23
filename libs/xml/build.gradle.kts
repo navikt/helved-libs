@@ -2,6 +2,7 @@ plugins {
     // todo: bytte ut plugin med å bare bruke java og xjc bindings
     //  https://eclipse-ee4j.github.io/jaxb-ri/4.0.5/docs/ch01.html#jaxb-2-0-sample-apps
     id("com.github.bjornvester.xjc") version "1.8.2"
+    id("com.github.bjornvester.wsdl2java") version "2.0.2"
 }
 
 dependencies {
@@ -15,5 +16,9 @@ dependencies {
 }
 
 xjc {
-    xsdDir.set(layout.projectDirectory.dir("main/schema"))
+    xsdDir.set(layout.projectDirectory.dir("main/schema/xml"))
+}
+
+wsdl2java {
+    wsdlDir.set(layout.projectDirectory.dir("main/schema/wsdl"))
 }
