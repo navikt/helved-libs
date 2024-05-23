@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.ktor.client.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -28,7 +29,7 @@ typealias ProxyAuthProvider = suspend () -> String
 
 class StsClient(
     private val config: StsConfig,
-    private val http: HttpClient = HttpClientFactory.new(),
+    private val http: HttpClient = HttpClientFactory.basic(LogLevel.ALL),
     private val jackson: ObjectMapper = jacksonObjectMapper(),
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Sts {
@@ -61,13 +62,12 @@ class StsClient(
 
             val decoded = String(Base64.getDecoder().decode(accessToken)).replace("&#13;\n", "")
 
-            secureLog.info("Base64 decoded token: $decoded")
-
             // todo: temporary test with explicit spaceing after commas
-            decoded.replaceBetweenXmlTag("X509IssuerName", "CN=B27 Issuing CA Intern, DC=preprod, DC=local")
+            val manipulated = decoded.replaceBetweenXmlTag("X509IssuerName", "CN=B27 Issuing CA Intern, DC=preprod, DC=local")
+            secureLog.info("Base64 decoded token: $manipulated ")
 
             SamlToken(
-                token = decoded,
+                token = manipulated,
                 expirationTime = LocalDateTime.now().plusSeconds(expiresIn)
             )
         }

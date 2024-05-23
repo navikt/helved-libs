@@ -44,6 +44,13 @@ object HttpClientFactory {
         disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
     }
+
+    fun basic(logLevel: LogLevel = LogLevel.INFO) = HttpClient(CIO) {
+        install(Logging) {
+            logger = ClientLogger(logLevel)
+            level = logLevel
+        }
+    }
 }
 
 internal class ClientLogger(level: LogLevel) : Logger {
