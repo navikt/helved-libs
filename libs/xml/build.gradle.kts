@@ -21,4 +21,5 @@ xjc {
 
 wsdl2java {
     wsdlDir.set(layout.projectDirectory.dir("main/schema/wsdl"))
+    bindingFile.set(layout.projectDirectory.file("main/schema/wsdl/simulering/simulerfpservicewsbinding.wsdl"))
 }
