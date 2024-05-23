@@ -63,6 +63,9 @@ class StsClient(
 
             secureLog.info("Base64 decoded token: $decoded")
 
+            // todo: temporary test with explicit spaceing after commas
+            decoded.replaceBetweenXmlTag("X509IssuerName", "CN=B27 Issuing CA Intern, DC=preprod, DC=local")
+
             SamlToken(
                 token = decoded,
                 expirationTime = LocalDateTime.now().plusSeconds(expiresIn)
@@ -84,6 +87,17 @@ class StsClient(
         }
     }
 
+}
+
+/**
+ * Replaces the content between the XML tags with the given replacement.
+ * @example <tag>original</tag> -> <tag>replacement</tag>
+ */
+fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
+    return replace(
+        regex = Regex("(?<=<$tag>).*(?=</$tag>)"),
+        replacement = replacement
+    )
 }
 
 class StsException(msg: String) : RuntimeException(msg)
