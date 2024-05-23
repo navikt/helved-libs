@@ -1,10 +1,10 @@
 package libs.xml
 
+import jakarta.xml.bind.JAXBContext
+import jakarta.xml.bind.JAXBElement
+import jakarta.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT
 import java.io.StringReader
 import java.io.StringWriter
-import javax.xml.bind.JAXBContext
-import javax.xml.bind.JAXBElement
-import javax.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT
 import javax.xml.namespace.QName
 import javax.xml.stream.XMLInputFactory
 import javax.xml.transform.stream.StreamSource

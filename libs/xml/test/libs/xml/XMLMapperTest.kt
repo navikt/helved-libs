@@ -1,10 +1,10 @@
 package libs.xml
 
+import jakarta.xml.bind.annotation.XmlRootElement
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Test
-import javax.xml.bind.annotation.XmlRootElement
 import kotlin.test.assertEquals
 
 class XMLMapperTest {
