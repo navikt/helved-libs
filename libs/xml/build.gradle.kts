@@ -10,6 +10,7 @@ dependencies {
     runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.5")
 
     testImplementation(kotlin("test"))
+    testImplementation("org.assertj:assertj-core:3.25.3")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
