@@ -58,16 +58,10 @@ class StsClient(
                 stsError(it)
             }
 
-            secureLog.info("Raw token: $accessToken")
-
-            val decoded = String(Base64.getDecoder().decode(accessToken)).replace("&#13;\n", "")
-
-            // todo: temporary test with explicit spaceing after commas
-            val manipulated = decoded.replaceBetweenXmlTag("X509IssuerName", "CN=B27 Issuing CA Intern, DC=preprod, DC=local")
-            secureLog.info("Base64 decoded token: $manipulated ")
+            val decoded = String(Base64.getDecoder().decode(accessToken))//.replace("&#13;\n", "")
 
             SamlToken(
-                token = manipulated,
+                token = decoded,
                 expirationTime = LocalDateTime.now().plusSeconds(expiresIn)
             )
         }
