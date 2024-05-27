@@ -8,8 +8,9 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import libs.http.HttpClientFactory
-import libs.utils.secureLog
 import java.net.URL
 import java.time.Duration
 import java.time.LocalDateTime
@@ -27,14 +28,46 @@ data class StsConfig(
 
 typealias ProxyAuthProvider = suspend () -> String
 
+class SamlTokenCache {
+    private val mutex = Mutex()
+    private val cache = mutableMapOf<String, SamlToken>()
+
+    suspend fun get(key: String): SamlToken? {
+        mutex.withLock {
+            val token = cache[key]
+            if (token?.expired == true) {
+                remove(key)
+                return null
+            }
+            return token
+        }
+    }
+
+    suspend fun set(key: String, token: SamlToken) {
+        mutex.withLock {
+            cache[key] = token
+        }
+    }
+
+    private suspend fun remove(key: String) {
+        mutex.withLock {
+            cache.remove(key)
+        }
+    }
+}
+
 class StsClient(
     private val config: StsConfig,
     private val http: HttpClient = HttpClientFactory.basic(LogLevel.ALL),
     private val jackson: ObjectMapper = jacksonObjectMapper(),
+    private val cache: SamlTokenCache,
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Sts {
     override suspend fun samlToken(): SamlToken {
-        // todo: cache valid tokens
+        val token = cache.get(config.user)
+        if (token != null) {
+            return token
+        }
 
         val response = http.get("${config.host}/rest/v1/sts/samltoken") {
             basicAuth(config.user, config.pass)
@@ -66,6 +99,7 @@ class StsClient(
             )
         }
 
+        cache.set(config.user, samlToken)
         return samlToken
     }
 
@@ -81,17 +115,6 @@ class StsClient(
         }
     }
 
-}
-
-/**
- * Replaces the content between the XML tags with the given replacement.
- * @example <tag>original</tag> -> <tag>replacement</tag>
- */
-fun String.replaceBetweenXmlTag(tag: String, replacement: String): String {
-    return replace(
-        regex = Regex("(?<=<$tag>).*(?=</$tag>)"),
-        replacement = replacement
-    )
 }
 
 class StsException(msg: String) : RuntimeException(msg)
