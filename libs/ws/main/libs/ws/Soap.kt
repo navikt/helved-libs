@@ -87,10 +87,10 @@ data class SoapFault(
 )
 
 data class Fault(
-    @JacksonXmlProperty(localName = "faultcode")
-    val code: String,
-    @JacksonXmlProperty(localName = "faultstring")
-    val messsage: String,
+//    @JacksonXmlProperty(localName = "faultcode")
+    val faultcode: String,
+//    @JacksonXmlProperty(localName = "faultstring")
+    val faultstring: String,
 )
 
 class SoapException(
@@ -105,8 +105,8 @@ fun soapError(msg: String, ex: Throwable) = SoapException(msg, ex = ex)
 fun soapError(fault: Fault) = SoapException(
     msg = """
         SOAP fault.
-        Code: ${fault.code}
-        Message: ${fault.messsage}
+        Code: ${fault.faultcode}
+        Message: ${fault.faultstring}
         """.trimIndent(),
-    code = fault.code,
+    code = fault.faultcode,
 )
