@@ -32,7 +32,7 @@ class StsClient(
     private val config: StsConfig,
     private val http: HttpClient = HttpClientFactory.basic(LogLevel.ALL),
     private val jackson: ObjectMapper = jacksonObjectMapper(),
-    private val cache: TokenCache<SamlToken>,
+    private val cache: TokenCache<SamlToken> = TokenCache(),
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Sts {
     override suspend fun samlToken(): SamlToken {
