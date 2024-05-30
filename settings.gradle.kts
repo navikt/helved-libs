@@ -3,6 +3,7 @@ rootProject.name = "helved-libs"
 include(
     "libs:auth",
     "libs:auth-test",
+    "libs:cache",
     "libs:http",
     "libs:job",
     "libs:mq",

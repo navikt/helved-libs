@@ -1,5 +1,6 @@
 package libs.auth
 
+import libs.cache.TokenCache
 import libs.http.HttpClientFactory
 import libs.utils.env
 import java.net.URL
@@ -20,7 +21,7 @@ class AzureTokenProvider(
         cache = TokenCache(),
     )
 ) {
-    suspend fun getClientCredentialsToken(scope: String): Token =
+    suspend fun getClientCredentialsToken(scope: String): AzureToken =
         client.getAccessToken(config.tokenEndpoint, scope) {
             """
                 client_id=${config.clientId}
@@ -30,7 +31,7 @@ class AzureTokenProvider(
             """.asUrlPart()
         }
 
-    suspend fun getOnBehalfOfToken(access_token: String, scope: String): Token =
+    suspend fun getOnBehalfOfToken(access_token: String, scope: String): AzureToken =
         client.getAccessToken(config.tokenEndpoint, scope) {
             """
                 client_id=${config.clientId}
@@ -42,7 +43,7 @@ class AzureTokenProvider(
             """.asUrlPart()
         }
 
-    suspend fun getUsernamePasswordToken(scope: String, username: String, password: String): Token =
+    suspend fun getUsernamePasswordToken(scope: String, username: String, password: String): AzureToken =
         client.getAccessToken(config.tokenEndpoint, username) {
             """
                 client_id=${config.clientId}

@@ -1,30 +1,34 @@
-package libs.auth
+package libs.cache
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 typealias CacheKey = String
 
-interface Cache {
-    suspend fun add(key: CacheKey, token: Token)
-    suspend fun get(key: CacheKey): Token?
+interface Cache<T> {
+    suspend fun add(key: CacheKey, token: T)
+    suspend fun get(key: CacheKey): T?
     suspend fun rm(key: CacheKey)
+}
+
+interface Token {
+    fun isExpired(): Boolean
 }
 
 /**
  * Coroutine safe token cache
  */
-class TokenCache : Cache {
-    private val tokens: HashMap<CacheKey, Token> = hashMapOf()
+class TokenCache<T: Token> : Cache<T> {
+    private val tokens: HashMap<CacheKey, T> = hashMapOf()
     private val mutex = Mutex()
 
-    override suspend fun add(key: CacheKey, token: Token) {
+    override suspend fun add(key: CacheKey, token: T) {
         mutex.withLock {
             tokens[key] = token
         }
     }
 
-    override suspend fun get(key: CacheKey): Token? {
+    override suspend fun get(key: CacheKey): T? {
         mutex.withLock {
             tokens[key]
         }?.let {

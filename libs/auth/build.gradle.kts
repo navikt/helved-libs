@@ -2,6 +2,7 @@ val ktorVersion = "2.3.11"
 
 dependencies {
     api(project(":libs:utils"))
+    api(project(":libs:cache"))
     api(project(":libs:http"))
 
     api("io.ktor:ktor-client-auth:$ktorVersion")

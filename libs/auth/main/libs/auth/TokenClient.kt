@@ -5,6 +5,9 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import libs.cache.Cache
+import libs.cache.CacheKey
+import libs.cache.TokenCache
 import libs.utils.appLog
 import libs.utils.secureLog
 import java.net.URL
@@ -19,27 +22,27 @@ object TokenProvider {
 class TokenClient(
     private val http: HttpClient,
     private val name: String,
-    private val cache: Cache = TokenCache()
+    private val cache: Cache<AzureToken> = TokenCache()
 ) {
     suspend fun getAccessToken(
         tokenUrl: URL,
         key: CacheKey,
         body: () -> String,
-    ): Token {
+    ): AzureToken {
         return when (val token = cache.get(key)) {
             null -> update(tokenUrl, key, body())
             else -> token
         }
     }
 
-    private suspend fun update(tokenUrl: URL, key: CacheKey, body: String): Token {
+    private suspend fun update(tokenUrl: URL, key: CacheKey, body: String): AzureToken {
         val res = http.post(tokenUrl) {
             accept(ContentType.Application.Json)
             contentType(ContentType.Application.FormUrlEncoded)
             setBody(body)
         }
 
-        val token = res.tryInto<Token>()
+        val token = res.tryInto<AzureToken>()
         cache.add(key, token)
         return token
     }

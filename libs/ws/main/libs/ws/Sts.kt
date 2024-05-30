@@ -8,8 +8,8 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import libs.cache.Token
+import libs.cache.TokenCache
 import libs.http.HttpClientFactory
 import java.net.URL
 import java.time.Duration
@@ -28,39 +28,11 @@ data class StsConfig(
 
 typealias ProxyAuthProvider = suspend () -> String
 
-class SamlTokenCache {
-    private val mutex = Mutex()
-    private val cache = mutableMapOf<String, SamlToken>()
-
-    suspend fun get(key: String): SamlToken? {
-        mutex.withLock {
-            val token = cache[key]
-            if (token?.expired == true) {
-                remove(key)
-                return null
-            }
-            return token
-        }
-    }
-
-    suspend fun set(key: String, token: SamlToken) {
-        mutex.withLock {
-            cache[key] = token
-        }
-    }
-
-    private suspend fun remove(key: String) {
-        mutex.withLock {
-            cache.remove(key)
-        }
-    }
-}
-
 class StsClient(
     private val config: StsConfig,
     private val http: HttpClient = HttpClientFactory.basic(LogLevel.ALL),
     private val jackson: ObjectMapper = jacksonObjectMapper(),
-    private val cache: SamlTokenCache,
+    private val cache: TokenCache<SamlToken>,
     private val proxyAuth: ProxyAuthProvider? = null,
 ) : Sts {
     override suspend fun samlToken(): SamlToken {
@@ -99,7 +71,7 @@ class StsClient(
             )
         }
 
-        cache.set(config.user, samlToken)
+        cache.add(config.user, samlToken)
         return samlToken
     }
 
@@ -131,9 +103,10 @@ fun stsError(node: JsonNode): Nothing {
 data class SamlToken(
     val token: String,
     val expirationTime: LocalDateTime,
-) {
+) : Token {
 
-    val expired: Boolean get() = expirationTime <= LocalDateTime.now().plus(EXP_LEEWAY)
+    override fun isExpired(): Boolean =
+        expirationTime <= LocalDateTime.now().plus(EXP_LEEWAY)
 
     companion object {
         private val EXP_LEEWAY = Duration.ofSeconds(10)
