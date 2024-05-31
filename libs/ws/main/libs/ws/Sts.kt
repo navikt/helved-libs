@@ -63,7 +63,7 @@ class StsClient(
                 stsError(it)
             }
 
-            val decoded = String(Base64.getDecoder().decode(accessToken))//.replace("&#13;\n", "")
+            val decoded = String(Base64.getDecoder().decode(accessToken))
 
             SamlToken(
                 token = decoded,
