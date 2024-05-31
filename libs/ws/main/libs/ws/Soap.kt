@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.http.*
 import libs.http.HttpClientFactory
 import libs.utils.Resource
 import java.net.URL
@@ -47,7 +48,14 @@ class SoapClient(
             setBody(xml)
         }
 
-        return res.bodyAsText()
+        return res.tryInto()
+    }
+
+    private suspend fun HttpResponse.tryInto(): String {
+        when (status) {
+            HttpStatusCode.OK -> return bodyAsText()
+            else -> error("Unexpected status code: $status when calling ${request.url}")
+        }
     }
 }
 

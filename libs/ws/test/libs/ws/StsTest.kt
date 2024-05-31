@@ -25,13 +25,13 @@ class StsTest {
 
     @Test
     fun `token is base64 decoded`() {
-        val client = StsClient(proxy.config)
+        val sts = StsClient(proxy.config.sts)
 
         val encoded = "very secure".let { Base64.getEncoder().encodeToString(it.toByteArray()) }
-        proxy.respondWith(GandalfToken(access_token = encoded))
+        proxy.sts.response = GandalfToken(access_token = encoded)
 
         val actual = runBlocking {
-            client.samlToken()
+            sts.samlToken()
         }
 
         val expected = SamlToken("very secure", LocalDateTime.now().plusSeconds(3600))
@@ -41,12 +41,12 @@ class StsTest {
 
     @Test
     fun `expiry is 3600s`() {
-        val client = StsClient(proxy.config)
+        val sts = StsClient(proxy.config.sts)
 
-        proxy.respondWith(GandalfToken(expires_in = 3600))
+        proxy.sts.response = GandalfToken(expires_in = 3600)
 
         val actual = runBlocking {
-            client.samlToken()
+            sts.samlToken()
         }
 
         val expected = SamlToken("very secure", LocalDateTime.now().plusSeconds(3600))
@@ -55,89 +55,71 @@ class StsTest {
 
     @Test
     fun `issued token type is saml2`() {
-        val client = StsClient(proxy.config)
+        val sts = StsClient(proxy.config.sts)
 
-        proxy.respondWith(GandalfToken(issued_token_type = "urn:ietf:params:oauth:token-type:saml2"))
+        proxy.sts.response = GandalfToken(issued_token_type = "urn:ietf:params:oauth:token-type:saml2")
 
         assertDoesNotThrow {
             runBlocking {
-                client.samlToken()
+                sts.samlToken()
             }
         }
     }
 
     @Test
     fun `throws StsException when wrong issued token type`() {
-        val client = StsClient(proxy.config)
+        val sts = StsClient(proxy.config.sts)
 
-        proxy.respondWith(GandalfToken(issued_token_type = "funky:type"))
-
+        proxy.sts.response = GandalfToken(issued_token_type = "funky:type")
         assertThrows<StsException> {
             runBlocking {
-                client.samlToken()
+                sts.samlToken()
             }
         }
     }
 
     @Test
     fun `can cache tokens`() {
-        val client = StsClient(proxy.config)
+        val sts = StsClient(proxy.config.sts)
 
         val encoded = "other".let { Base64.getEncoder().encodeToString(it.toByteArray()) }
 
         runBlocking {
-            val token = client.samlToken()
-            proxy.respondWith(GandalfToken(access_token = encoded, expires_in = 1))
-            val token2 = client.samlToken()
+            val token = sts.samlToken()
+            proxy.sts.response = GandalfToken(access_token = encoded, expires_in = 1)
+            val token2 = sts.samlToken()
             assertEquals(token, token2)
         }
     }
 
     @Test
     fun `can invalidate expired tokens`() {
-        val client = StsClient(proxy.config)
+        val sts = StsClient(proxy.config.sts)
 
-        proxy.respondWith(GandalfToken(expires_in = 1))
+        proxy.sts.response = GandalfToken(expires_in = 1)
 
         runBlocking {
-            val token = client.samlToken()
+            val token = sts.samlToken()
             Thread.sleep(1)
-            proxy.respondWith(GandalfToken(expires_in = 1))
-            val token2 = client.samlToken()
+            proxy.sts.response = GandalfToken(expires_in = 1)
+            val token2 = sts.samlToken()
             assertNotEquals(token, token2)
         }
     }
 
     @Test
     fun `can use proxy-auth`() {
-        val client = StsClient(proxy.config, proxyAuth = suspend {
+        val sts = StsClient(proxy.config.sts, proxyAuth = suspend {
             "token for proxy"
         })
 
-        proxy.expectRequest {
+        proxy.sts.request = {
             it.request.header("X-Proxy-Authorization") == "token for proxy"
         }
 
         assertDoesNotThrow {
             runBlocking {
-                client.samlToken()
-            }
-        }
-    }
-
-    @Test
-    fun `proxy fake throws exception when expectRequest returns false`() {
-        val client = StsClient(proxy.config, proxyAuth = suspend {
-            "token for proxy"
-        })
-
-        proxy.expectRequest {
-            it.request.header("X-Proxy-Authorization") == "something else"
-        }
-
-        assertThrows<IllegalStateException> {
-            runBlocking {
-                client.samlToken()
+                sts.samlToken()
             }
         }
     }

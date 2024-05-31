@@ -83,7 +83,7 @@ class StsClient(
                 return from(json)
             }
 
-            else -> error("Unexpected status code: $status when calling $request.url")
+            else -> error("Unexpected status code: $status when calling ${request.url}")
         }
     }
 
