@@ -95,10 +95,9 @@ data class SoapFault(
 )
 
 data class Fault(
-//    @JacksonXmlProperty(localName = "faultcode")
     val faultcode: String,
-//    @JacksonXmlProperty(localName = "faultstring")
     val faultstring: String,
+    val detail: String?,
 )
 
 class SoapException(
