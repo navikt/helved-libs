@@ -114,6 +114,8 @@ fun soapError(fault: Fault) = SoapException(
         SOAP fault.
         Code: ${fault.faultcode}
         Message: ${fault.faultstring}
+        Detail: ${fault.detail}
         """.trimIndent(),
     code = fault.faultcode,
+    details = fault.detail
 )
