@@ -56,16 +56,19 @@ internal object StsFake {
 
 internal object SoapFake {
     private val defaultResponse = "<xml>success</xml>"
+    private val defaultResponseStatus = HttpStatusCode.OK
     private val defaultRequest: (ApplicationCall) -> Boolean = { call ->
         val ct = requireNotNull(call.request.header("Content-Type"))
         val acc = requireNotNull(call.request.header("Accept"))
         ct.contains("text/xml") && acc.contains("*/*")
     }
     var response = defaultResponse
+    var responseStatus = defaultResponseStatus
     var request = defaultRequest
 
     fun reset() {
         request = defaultRequest
+        responseStatus = defaultResponseStatus
         response = defaultResponse
     }
 }
@@ -88,7 +91,7 @@ private fun Application.proxy() {
 
         post("some/soap/endpoint") {
             when (SoapFake.request(call)) {
-                true -> call.respondText(SoapFake.response)
+                true -> call.respondText(SoapFake.response, status = SoapFake.responseStatus)
                 false -> call.respondText(
                     text = "soap did not expect request: ${call.request}",
                     status = HttpStatusCode.InternalServerError

@@ -53,7 +53,7 @@ class SoapClient(
 
     private suspend fun HttpResponse.tryInto(): String {
         when (status) {
-            HttpStatusCode.OK -> return bodyAsText()
+            HttpStatusCode.InternalServerError, HttpStatusCode.OK -> return bodyAsText()
             else -> error("Unexpected status code: $status when calling ${request.url}")
         }
     }
