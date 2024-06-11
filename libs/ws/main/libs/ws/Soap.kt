@@ -99,3 +99,14 @@ data class Fault(
     val faultstring: String,
     val detail: String?,
 )
+
+class SoapException(msg: String) : RuntimeException(msg)
+
+fun soapError(fault: Fault): Nothing = throw SoapException(
+    """
+        SOAP fault.
+        Code: ${fault.faultcode}
+        Message: ${fault.faultstring}
+        Detail: ${fault.detail}
+    """.trimIndent(),
+)
