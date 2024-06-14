@@ -97,7 +97,7 @@ data class SoapFault(
 data class Fault(
     val faultcode: String,
     val faultstring: String,
-    val detail: String?,
+    val detail: Map<String, Any>?,
 )
 
 class SoapException(msg: String) : RuntimeException(msg)
