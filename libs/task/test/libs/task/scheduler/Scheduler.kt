@@ -18,10 +18,10 @@ class Scheduler(context: CoroutineContext) : Scheduler<TaskDao>(
 
     override suspend fun feed(): List<TaskDao> =
         transaction {
-            TaskDao.findBy(Status.UBEHANDLET)
+            TaskDao.findBy(Status.UNPROCESSED)
         }
 
-    override fun onError(err: Throwable) {
+    override suspend fun onError(err: Throwable) {
         secureLog.error("Feil oppstod ved uførelse av task", err)
     }
 
@@ -29,7 +29,7 @@ class Scheduler(context: CoroutineContext) : Scheduler<TaskDao>(
         counter.incrementAndGet()
 
         transaction {
-            feeded.update(Status.KLAR_TIL_PLUKK)
+            feeded.update(Status.PROCESSING)
         }
     }
 }

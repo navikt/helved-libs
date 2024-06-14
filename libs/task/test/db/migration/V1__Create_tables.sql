@@ -3,24 +3,21 @@ CREATE TABLE task
     id            UUID PRIMARY KEY,
     payload       VARCHAR     NOT NULL,
     status        VARCHAR(20) NOT NULL,
-    type          VARCHAR     NOT NULL,
-    versjon       BIGINT      NOT NULL,
-    opprettet_tid TIMESTAMP   NOT NULL,
-    metadata      VARCHAR,
-    avvikstype    VARCHAR,
-    trigger_tid   TIMESTAMP   NOT NULL
+    attempt       BIGINT      NOT NULL,
+    created_at    TIMESTAMP   NOT NULL,
+    updated_at    TIMESTAMP   NOT NULL,
+    scheduled_for TIMESTAMP   NOT NULL,
+    message       VARCHAR
 );
 
-CREATE TABLE task_log
+CREATE TABLE task_history
 (
-    id            UUID PRIMARY KEY,
-    task_id       UUID REFERENCES task (id) ON DELETE CASCADE,
-    type          VARCHAR   NOT NULL,
-    node          VARCHAR   NOT NULL,
-    opprettet_tid TIMESTAMP NOT NULL,
-    endret_av     VARCHAR   NOT NULL,
-    melding       VARCHAR
+    id           UUID PRIMARY KEY,
+    task_id      UUID REFERENCES task (id) ON DELETE CASCADE,
+    created_at   TIMESTAMP NOT NULL,
+    triggered_at TIMESTAMP NOT NULL,
+    triggered_by TIMESTAMP NOT NULL,
+    status       VARCHAR(20)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS task_payload_type_idx ON task (payload, type);
 CREATE INDEX IF NOT EXISTS task_status_idx ON task (status);

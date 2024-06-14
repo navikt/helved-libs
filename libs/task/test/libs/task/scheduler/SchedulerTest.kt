@@ -14,21 +14,22 @@ import libs.task.Status
 import libs.task.TaskDao
 import libs.utils.appLog
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import java.util.*
 import kotlin.system.measureTimeMillis
 
 class SchedulerTest : H2() {
 
     @Test
-    fun `populated UBEHANDLET tasks is set to KLAR_TIL_PLUKK by scheduler`() = runTest(h2) {
-        appLog.info("initially ${count(Status.UBEHANDLET)} UBEHANDLET tasks")
+    fun `UNPROCESSED tasks is set to PROCESSING by scheduler`() = runTest(h2) {
+        appLog.info("initially ${count(Status.UNPROCESSED)} UNPROCESSED tasks")
 
         produceWhile {
-            count(Status.UBEHANDLET) < 10
+            count(Status.UNPROCESSED) < 10
         }
 
         consumeWhile {
-            count(Status.UBEHANDLET) > 1
+            count(Status.UNPROCESSED) > 1
         }
     }
 
@@ -38,10 +39,10 @@ class SchedulerTest : H2() {
                 while (predicate()) continue
             }
 
-            val ubehCount = count(Status.UBEHANDLET)
-            val klarCount = count(Status.KLAR_TIL_PLUKK)
+            val unprocCount = count(Status.UNPROCESSED)
+            val procCount = count(Status.PROCESSING)
 
-            appLog.info("processed $ubehCount UBEHANDLET -> $klarCount KLAR_TIL_PLUKK in $timed ms")
+            appLog.info("Changed $unprocCount UNPROCESSED -> $procCount PROCESSING in $timed ms")
         }
     }
 
@@ -60,7 +61,7 @@ class SchedulerTest : H2() {
 
         producer.cancelAndJoin()
 
-        appLog.info("saved ${count(Status.UBEHANDLET)} UBEHANDLET tasks in $timed ms")
+        appLog.info("saved ${count(Status.UNPROCESSED)} UNPROCESSED tasks in $timed ms")
     }
 }
 
@@ -80,11 +81,16 @@ private val CoroutineScope.infiniteTasks
     get() = produce {
         while (true) {
             val id = UUID.randomUUID()
+            val now = LocalDateTime.now()
             val task = TaskDao(
+                id = id,
                 payload = "$id",
-                type = "awesome $id",
-                metadata = "splendid",
-                avvikstype = "avvik",
+                status = Status.UNPROCESSED,
+                attempt = 0,
+                createdAt = now,
+                updatedAt = now,
+                scheduledFor = now,
+                message = null,
             )
             send(task)
         }

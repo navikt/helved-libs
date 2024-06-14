@@ -11,35 +11,30 @@ import java.time.LocalDateTime
 import java.util.*
 import kotlin.coroutines.coroutineContext
 
-typealias BeforeOpprettetTid = LocalDateTime
-typealias BeforeTriggerTid = LocalDateTime
-
 data class TaskDao(
-    val payload: String,
-    val type: String,
-    val metadata: String?,
-    val avvikstype: String?,
-    val trigger_tid: LocalDateTime = LocalDateTime.now(),
     val id: UUID = UUID.randomUUID(),
-    val status: Status = Status.UBEHANDLET,
-    val opprettet_tid: LocalDateTime = LocalDateTime.now(),
-    val versjon: Long = 0,
+    val payload: String,
+    val status: Status,
+    val attempt: Int,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime,
+    val scheduledFor: LocalDateTime,
+    val message: String?,
 ) {
     suspend fun insert() {
         val sql = """
-            INSERT INTO task (id, payload, status, versjon, opprettet_tid, type, metadata, trigger_tid, avvikstype) 
-            VALUES (?,?,?,?,?,?,?,?,?)
+            INSERT INTO task (id, payload, status, attempt, created_at, updated_at, scheduled_for, message) 
+            VALUES (?,?,?,?,?,?,?,?)
         """
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, id)
             stmt.setString(2, payload)
             stmt.setString(3, status.name)
-            stmt.setObject(4, versjon)
-            stmt.setTimestamp(5, Timestamp.valueOf(opprettet_tid))
-            stmt.setString(6, type)
-            stmt.setString(7, metadata)
-            stmt.setObject(8, Timestamp.valueOf(trigger_tid))
-            stmt.setString(9, avvikstype)
+            stmt.setObject(4, attempt)
+            stmt.setTimestamp(5, Timestamp.valueOf(createdAt))
+            stmt.setTimestamp(6, Timestamp.valueOf(updatedAt))
+            stmt.setTimestamp(7, Timestamp.valueOf(scheduledFor))
+            stmt.setString(8, message)
             stmt.executeUpdate()
         }.also {
             appLog.debug(sql)
@@ -47,10 +42,26 @@ data class TaskDao(
     }
 
     suspend fun update(status: Status) {
-        val sql = "UPDATE task SET status = ? WHERE id = ?"
+        val sql = "UPDATE task SET status = ?, attempt = ?, updated_at = ? WHERE id = ?"
         coroutineContext.connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, status.name)
-            stmt.setObject(2, id)
+            stmt.setObject(2, attempt + 1)
+            stmt.setObject(3, Timestamp.valueOf(updatedAt))
+            stmt.setObject(4, id)
+            stmt.executeUpdate()
+        }.also {
+            appLog.debug(sql)
+        }
+    }
+
+    suspend fun update(status: Status, message: String) {
+        val sql = "UPDATE task SET status = ?, attempt = ?, updated_at = ?, message = ? WHERE id = ?"
+        coroutineContext.connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, status.name)
+            stmt.setObject(2, attempt + 1)
+            stmt.setObject(3, Timestamp.valueOf(updatedAt))
+            stmt.setString(4, message)
+            stmt.setObject(5, id)
             stmt.executeUpdate()
         }.also {
             appLog.debug(sql)
@@ -58,14 +69,14 @@ data class TaskDao(
     }
 
     companion object {
-        suspend fun findBy(status: List<Status>, trigger_tid: BeforeTriggerTid): List<TaskDao> {
-            val status = commaSeparated(status)
+        suspend fun findUpdatedBefore(status: Status, updated_at: LocalDateTime): List<TaskDao> {
             val sql = """
                SELECT * FROM task
-               WHERE status IN ($status) AND trigger_tid < ?
+               WHERE status = ? AND updated_at < ?
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setObject(2, Timestamp.valueOf(trigger_tid))
+                stmt.setString(1, status.name)
+                stmt.setObject(2, Timestamp.valueOf(updated_at))
                 stmt.executeQuery().map(::from)
             }.also {
                 appLog.debug(sql)
@@ -85,20 +96,6 @@ data class TaskDao(
             }
         }
 
-        suspend fun findBy(status: List<Status>): List<TaskDao> {
-            val status = commaSeparated(status)
-            val sql = """
-                SELECT * FROM task
-                WHERE status IN ($status)
-            """
-
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.executeQuery().map(::from)
-            }.also {
-                appLog.debug(sql)
-            }
-        }
-
         suspend fun countBy(status: Status): Long {
             val sql = """
                 SELECT count(*) FROM task
@@ -112,114 +109,41 @@ data class TaskDao(
             }
         }
 
-        suspend fun findBy(status: List<Status>, type: String): List<TaskDao> {
-            val status = commaSeparated(status)
+        suspend fun findBy(status: List<Status>): List<TaskDao> {
+            val status = status.joinToString(", ") { "'$it'" }
             val sql = """
                 SELECT * FROM task
-                WHERE type = ? AND status IN ($status)
+                WHERE status IN ($status)
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, type)
                 stmt.executeQuery().map(::from)
             }.also {
                 appLog.debug(sql)
             }
         }
 
-        suspend fun findFirstOrNullBy(payload: String, type: String): TaskDao? {
+        suspend fun findCreatedAfter(created_at: LocalDateTime): List<TaskDao> {
             val sql = """
-                SELECT * FROM task
-                WHERE payload = ? and type = ?
+               SELECT * FROM task
+               WHERE created_at >= ?
             """
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, payload)
-                stmt.setString(2, type)
-                stmt.executeQuery().map(::from).firstOrNull()
-            }.also {
-                appLog.debug(sql)
-            }
-        }
-
-        suspend fun countOpenTasks(): List<AntallÅpneTask> {
-            val status = commaSeparated(Status.open())
-            val sql = """
-                SELECT t.type, t.status, count(*) AS count
-                FROM task t
-                WHERE t.status IN ($status)
-            """
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.executeQuery().map(AntallÅpneTask::from)
-            }.also {
-                appLog.debug(sql)
-            }
-        }
-
-        suspend fun finnTasksSomErFerdigNåMenFeiletFør(): List<TaskDao> {
-            val sql = """
-                SELECT DISTINCT t.*
-                FROM task t
-                JOIN task_log l ON t.id = l.task_id
-                WHERE t.status = ? AND l.type IN ('FEILET', 'MANUELL_OPPFØLGING')
-            """
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, Status.FERDIG.name)
+                stmt.setObject(1, Timestamp.valueOf(created_at))
                 stmt.executeQuery().map(::from)
             }.also {
                 appLog.debug(sql)
             }
         }
-
-        suspend fun findBy(status: Status, opprettet_tid: BeforeOpprettetTid): List<TaskDao> {
-            val sql = """
-                WITH q AS (
-                    SELECT t.id, l.type, l.opprettet_tid, row_number() OVER (PARTITION BY t.id ORDER BY l.opprettet_tid DESC) rn
-                    FROM task t
-                    JOIN task_log l on t.id = l.task_id
-                    WHERE t.status = ?
-                )
-                SELECT t.*
-                FROM task t JOIN q t2 on t.id = t2.id
-                WHERE t2.rn = 1 AND t2.opprettet_tid < ?
-            """
-            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, status.name)
-                stmt.setObject(2, Timestamp.valueOf(opprettet_tid))
-                stmt.executeQuery().map(::from)
-            }.also {
-                appLog.debug(sql)
-            }
-        }
-
-        suspend fun findBy(x_trace_id: String): List<TaskDao> = TODO()
     }
-}
-
-fun commaSeparated(list: List<Any>): String {
-    return list.joinToString(", ") { "'$it'" }
 }
 
 fun TaskDao.Companion.from(rs: ResultSet) = TaskDao(
-    payload = rs.getString("payload"),
-    type = rs.getString("type"),
-    metadata = rs.getString("metadata"),
-    avvikstype = rs.getString("avvikstype"),
-    trigger_tid = rs.getTimestamp("trigger_tid").toLocalDateTime(),
     id = UUID.fromString(rs.getString("id")),
+    payload = rs.getString("payload"),
     status = Status.valueOf(rs.getString("status")),
-    opprettet_tid = rs.getTimestamp("opprettet_tid").toLocalDateTime(),
-    versjon = rs.getLong("versjon"),
+    attempt = rs.getInt("attempt"),
+    createdAt = rs.getTimestamp("created_at").toLocalDateTime(),
+    updatedAt = rs.getTimestamp("updated_at").toLocalDateTime(),
+    scheduledFor = rs.getTimestamp("scheduled_for").toLocalDateTime(),
+    message = rs.getString("message")
 )
-
-data class AntallÅpneTask(
-    val type: String,
-    val status: Status,
-    val count: Long,
-) {
-    companion object {
-        fun from(rs: ResultSet) = AntallÅpneTask(
-            type = rs.getString("type"),
-            status = rs.getString("status").let(Status::valueOf),
-            count = rs.getLong("count")
-        )
-    }
-}
