@@ -2,6 +2,7 @@ package libs.task
 
 import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
@@ -102,6 +103,49 @@ class TasksTest : H2() {
                 enTask(createdAt = LocalDateTime.of(2024, 6, 16, 10, 45)).insert()
             }
             assertEquals(2, Tasks.createdAfter(LocalDateTime.of(2024, 6, 15, 10, 45)).size)
+        }
+    }
+
+    @Nested
+    inner class update {
+        @Test
+        fun `attempt is increased`() = runTest(h2) {
+            val task = transaction {
+                enTask(Status.PROCESSING).apply { insert() }
+            }
+            transaction {
+                Tasks.update(task.id, Status.MANUAL, "Klarer ikke automatisk sende inn oppdrag")
+            }
+
+            val actual = transaction { TaskDao.select(task.id) }.single()
+            assertEquals(1, actual.attempt)
+        }
+
+        @Test
+        fun `update_at is set to now`() = runTest(h2) {
+            val task = transaction {
+                enTask(Status.PROCESSING).apply { insert() }
+            }
+            transaction {
+                Tasks.update(task.id, Status.PROCESSING, "Oppdrag var stengt. Forsøker igjen...")
+            }
+
+            val actual = transaction { TaskDao.select(task.id) }.single()
+            assertTrue(task.updatedAt.isBefore(actual.updatedAt))
+            assertTrue(LocalDateTime.now().isAfter(actual.updatedAt))
+        }
+
+        @Test
+        fun `message is applied`() = runTest(h2) {
+            val task = transaction {
+                enTask(Status.PROCESSING).apply { insert() }
+            }
+            transaction {
+                Tasks.update(task.id, Status.FAIL, "Ugyldig id")
+            }
+
+            val actual = transaction { TaskDao.select(task.id) }.single()
+            assertEquals("Ugyldig id", actual.message)
         }
     }
 }

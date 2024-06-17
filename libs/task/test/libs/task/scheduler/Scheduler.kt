@@ -18,7 +18,7 @@ class Scheduler(context: CoroutineContext) : Scheduler<TaskDao>(
 
     override suspend fun feed(): List<TaskDao> =
         transaction {
-            TaskDao.findBy(Status.UNPROCESSED)
+            TaskDao.select(status = listOf(Status.UNPROCESSED))
         }
 
     override suspend fun onError(err: Throwable) {
@@ -29,7 +29,7 @@ class Scheduler(context: CoroutineContext) : Scheduler<TaskDao>(
         counter.incrementAndGet()
 
         transaction {
-            feeded.update(Status.PROCESSING)
+            feeded.copy(status = Status.PROCESSING).update()
         }
     }
 }
