@@ -102,7 +102,7 @@ class TaskDaoTest : H2() {
 
         val before = transaction { TaskDao.select(id = id) }.single()
         assertEquals(Status.UNPROCESSED, before.status)
-        assertEquals(now, before.updatedAt)
+        assertEquals(before.createdAt, before.updatedAt)
         assertEquals(0, before.attempt)
         assertEquals(null, before.message)
 
