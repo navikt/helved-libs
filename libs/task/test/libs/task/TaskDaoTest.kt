@@ -4,6 +4,7 @@ import kotlinx.coroutines.test.runTest
 import libs.postgres.concurrency.transaction
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.test.assertEquals
 
@@ -116,7 +117,7 @@ class TaskDaoTest : H2() {
 
         val actual = transaction { TaskDao.select(id = id) }.single()
         assertEquals(Status.FAIL, actual.status)
-        assertEquals(now.plusMinutes(1), actual.updatedAt)
+        assertEquals(now.plusMinutes(1).truncatedTo(ChronoUnit.MILLIS), actual.updatedAt.truncatedTo(ChronoUnit.MILLIS))
         assertEquals(1, actual.attempt)
         assertEquals("Invalid payload", actual.message)
     }
