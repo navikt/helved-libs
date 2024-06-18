@@ -20,7 +20,7 @@ object Tasks {
 
     suspend fun createdAfter(after: LocalDateTime): List<TaskDto> =
         transaction {
-            TaskDao.select(createdAt = TaskDao.Companion.SelectTime(after, TaskDao.Companion.Operator.GREATER))
+            TaskDao.select(createdAt = SelectTime(Operator.GE, after))
                 .map(TaskDto::from)
         }
 

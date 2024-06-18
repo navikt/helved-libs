@@ -109,19 +109,6 @@ data class TaskDao(
                 stmt.executeQuery().map(::from)
             }
         }
-
-        data class SelectTime(
-            val time: LocalDateTime = LocalDateTime.now(),
-            val operator: Operator = Operator.LESS,
-        )
-
-        enum class Operator(internal val opcode: String) {
-            EQ("="),
-            NEQ("!="),
-            IN("IN"),
-            GREATER(">="),
-            LESS("<="),
-        }
     }
 }
 
@@ -135,3 +122,16 @@ fun TaskDao.Companion.from(rs: ResultSet) = TaskDao(
     scheduledFor = rs.getTimestamp("scheduled_for").toLocalDateTime(),
     message = rs.getString("message")
 )
+
+/**
+ * [column] [operator] [time]
+ * eg: created_at >= now()
+ */
+data class SelectTime(
+    val operator: Operator = Operator.LE,
+    val time: LocalDateTime = LocalDateTime.now(),
+)
+
+enum class Operator(internal val opcode: String) {
+    EQ("="), NEQ("!="), IN("IN"), GE(">="), LE("<="),
+}
