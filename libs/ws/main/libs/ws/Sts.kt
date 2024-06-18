@@ -28,9 +28,11 @@ data class StsConfig(
 
 typealias ProxyAuthProvider = suspend () -> String
 
+private val simpleHttpClient: HttpClient = HttpClientFactory.new(LogLevel.ALL, null, null, null)
+
 class StsClient(
     private val config: StsConfig,
-    private val http: HttpClient = HttpClientFactory.basic(LogLevel.ALL),
+    private val http: HttpClient = simpleHttpClient,
     private val jackson: ObjectMapper = jacksonObjectMapper(),
     private val cache: TokenCache<SamlToken> = TokenCache(),
     private val proxyAuth: ProxyAuthProvider? = null,
