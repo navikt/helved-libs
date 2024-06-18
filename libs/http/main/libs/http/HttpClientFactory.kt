@@ -14,46 +14,47 @@ import libs.utils.appLog
 import libs.utils.secureLog
 
 object HttpClientFactory {
-
     fun new(
         logLevel: LogLevel = LogLevel.INFO,
-        configure: (ObjectMapper.() -> Unit) = { defaults() }
-    ): HttpClient = HttpClient(CIO) {
+        retries: Int? = 3,
+        requestTimeoutMs: Long? = 30_000,
+        json: (ObjectMapper.() -> Unit)? = {
+            registerModule(JavaTimeModule())
+            disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+        },
+    ) =
+        HttpClient(CIO) {
+            install(Logging) {
+                logger = ClientLogger(logLevel)
+                level = logLevel
+            }
 
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30_000
-            connectTimeoutMillis = 5_000
-        }
+            json?.let { configure ->
+                install(ContentNegotiation) {
+                    jackson {
+                        configure()
+                    }
+                }
+            }
 
-        install(HttpRequestRetry)
+            retries?.let {
+                install(HttpRequestRetry) {
+                    retryOnServerErrors(retries)
+                    exponentialDelay()
+                }
+            }
 
-        install(Logging) {
-            logger = ClientLogger(logLevel)
-            level = logLevel
-        }
-
-        install(ContentNegotiation) {
-            jackson {
-                this.configure()
+            requestTimeoutMs?.let {
+                install(HttpTimeout) {
+                    requestTimeoutMillis = requestTimeoutMs
+                    connectTimeoutMillis = 5_000
+                }
             }
         }
-    }
-
-    private fun ObjectMapper.defaults() {
-        registerModule(JavaTimeModule())
-        disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-    }
-
-    fun basic(logLevel: LogLevel = LogLevel.INFO) = HttpClient(CIO) {
-        install(Logging) {
-            logger = ClientLogger(logLevel)
-            level = logLevel
-        }
-    }
 }
 
-internal class ClientLogger(level: LogLevel) : Logger {
+class ClientLogger(level: LogLevel) : Logger {
     override fun log(message: String) {
         log.info(message)
     }
