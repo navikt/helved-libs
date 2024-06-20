@@ -4,8 +4,11 @@ import libs.postgres.Postgres
 import libs.postgres.Postgres.migrate
 import libs.postgres.PostgresConfig
 import libs.postgres.concurrency.CoroutineDatasource
+import libs.postgres.transaction
 import libs.utils.env
 import org.testcontainers.containers.PostgreSQLContainer
+import java.sql.Connection
+import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
 
 class PostgresContainer(appname: String) : AutoCloseable {
@@ -49,6 +52,9 @@ class PostgresContainer(appname: String) : AutoCloseable {
     val context: CoroutineContext by lazy {
         CoroutineDatasource(datasource)
     }
+
+    fun <T> transaction(block: (Connection) -> T): T = datasource.transaction(block)
+    fun <T> withDatasource(block: (DataSource) -> T): T = block(datasource)
 
     override fun close() {
         // GitHub Actions service containers or testcontainers is not reusable and must be closed
