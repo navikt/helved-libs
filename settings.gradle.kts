@@ -9,6 +9,7 @@ include(
     "libs:jdbc-test",
     "libs:job",
     "libs:mq",
+    "libs:mq-test",
     "libs:task",
     "libs:utils",
     "libs:ws",
