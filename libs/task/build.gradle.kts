@@ -3,7 +3,7 @@ val ktorVersion = "2.3.11"
 dependencies {
     api(project(":libs:utils"))
     api(project(":libs:job"))
-    api(project(":libs:postgres"))
+    api(project(":libs:jdbc"))
 
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 
