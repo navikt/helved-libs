@@ -10,7 +10,6 @@ include(
     "libs:job",
     "libs:mq",
     "libs:mq-test",
-    "libs:task",
     "libs:utils",
     "libs:ws",
     "libs:xml",
