@@ -13,10 +13,10 @@ Following libraries are available:
 │   ├── auth-test           # ktor auth for testing 
 │   ├── cache               # green thread safe caching
 │   ├── http                # ktor http factory
-│   ├── job                 #  green thread job
+│   ├── jdbc                # jdbc trasactions, connections and migrations and green threads
+│   ├── jdbc-test           # testcontainer/h2 setup for jdbc
+│   ├── job                 # green thread job
 │   ├── mq                  # Clients for consumers and producers
-│   ├── postgres            # green thread-safe transactions
-│   ├── task                # a green thread job implementation
 │   ├── utils               # common utilities for logging, error-handling, etc
 │   ├── ws                  # webservice clients; soap and sts
 │   └── xml                 # xml parsers
