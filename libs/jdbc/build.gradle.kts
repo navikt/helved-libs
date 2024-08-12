@@ -6,6 +6,6 @@ dependencies {
     api("com.zaxxer:HikariCP:5.1.0")
     api("org.flywaydb:flyway-database-postgresql:10.17.0")
 
-    testImplementation("com.h2database:h2:2.3.230")
+    testImplementation("com.h2database:h2:2.3.232")
     testImplementation(kotlin("test"))
 }
