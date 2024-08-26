@@ -18,8 +18,8 @@ class JwkGenerator(
     private val rsaKey: RSAKey
         get() = JWKSet.parse(TEST_JWKS).getKeyByKeyId("localhost-signer") as RSAKey
 
-    fun generate(): String {
-        val claims = claims()
+    fun generate(custom: List<Claim> = emptyList()): String {
+        val claims = claims(custom)
         val signed = signed(claims)
         return signed.serialize()
     }
@@ -30,14 +30,23 @@ class JwkGenerator(
         return SignedJWT(header, claims).apply { sign(signer) }
     }
 
-    private fun claims() = JWTClaimsSet
-        .Builder()
-        .issuer(issuer)
-        .audience(clientId)
-        .expirationTime(Date(Date().time + 60 * 60 * 3600))
-//        .claim("pid", personident)
-        .build()
+    private fun claims(claims: List<Claim>): JWTClaimsSet {
+        val builder = JWTClaimsSet
+            .Builder()
+            .issuer(issuer)
+            .audience(clientId)
+            .expirationTime(Date(Date().time + 60 * 60 * 3600))
+//            .claim("pid", personident)
+
+        claims.forEach { (k, v) ->
+            builder.claim(k, v)
+        }
+
+        return builder.build()
+    }
 }
+
+data class Claim(val key: String, val value: String)
 
 @Language("JSON")
 const val TEST_JWKS: String = """{
