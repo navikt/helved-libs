@@ -11,7 +11,7 @@ import org.apache.kafka.common.serialization.Serializer
 import java.util.*
 
 interface Kafka<T> : AutoCloseable {
-    fun produce(topic: String, key: String, value: T)
+    fun produce(key: String, value: T)
 }
 
 data class KafkaConfig(
