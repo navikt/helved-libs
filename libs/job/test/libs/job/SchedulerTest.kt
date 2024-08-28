@@ -41,9 +41,9 @@ class TaskScheduler(private val datasource: Datasource) : Scheduler<Int>(120, 1)
     override suspend fun feed(): List<Int> = datasource.selectUncommitted()
     override suspend fun onError(err: Throwable) = fail("Task failed", err)
 
-    override suspend fun task(feeded: Int) {
-        println("task for $feeded")
-        datasource.commit(feeded)
+    override suspend fun task(fed: Int) {
+        println("task for $fed")
+        datasource.commit(fed)
     }
 }
 

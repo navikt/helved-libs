@@ -26,9 +26,9 @@ abstract class Scheduler<T>(
     abstract suspend fun feed(): List<T>
 
     /**
-     * What to do with each feeded element
+     * What to do with each fed element
      */
-    abstract suspend fun task(feeded: T)
+    abstract suspend fun task(fed: T)
 
     /**
      * What to do when an error occurs
