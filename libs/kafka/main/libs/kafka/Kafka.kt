@@ -10,8 +10,8 @@ import org.apache.kafka.common.serialization.Serdes.StringSerde
 import org.apache.kafka.common.serialization.Serializer
 import java.util.*
 
-interface Kafka : AutoCloseable {
-    fun <T> produce(topic: String, key: String, value: T)
+interface Kafka<T> : AutoCloseable {
+    fun produce(topic: String, key: String, value: T)
 }
 
 data class KafkaConfig(
