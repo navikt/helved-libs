@@ -8,6 +8,7 @@ include(
     "libs:jdbc",
     "libs:jdbc-test",
     "libs:job",
+    "libs:kafka",
     "libs:mq",
     "libs:mq-test",
     "libs:utils",
