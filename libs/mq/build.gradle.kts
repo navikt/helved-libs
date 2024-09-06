@@ -2,7 +2,7 @@ dependencies {
     api(project(":libs:utils"))
     api(project(":libs:xml"))
 
-    api("com.ibm.mq:com.ibm.mq.allclient:9.4.0.0")
+    api("com.ibm.mq:com.ibm.mq.allclient:9.4.0.5")
 
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 
