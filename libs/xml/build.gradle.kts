@@ -11,7 +11,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation("org.assertj:assertj-core:3.26.3")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 }
 
 xjc {
