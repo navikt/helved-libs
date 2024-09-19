@@ -16,7 +16,9 @@ Following libraries are available:
 │   ├── jdbc                # jdbc trasactions, connections and migrations and green threads
 │   ├── jdbc-test           # testcontainer/h2 setup for jdbc
 │   ├── job                 # green thread job
+│   ├── kafka               # Kafka consumer/producer
 │   ├── mq                  # Clients for consumers and producers
+│   ├── mq-test             # testcontainer/mq for intel m2 og m3
 │   ├── utils               # common utilities for logging, error-handling, etc
 │   ├── ws                  # webservice clients; soap and sts
 │   └── xml                 # xml parsers
