@@ -4,8 +4,11 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     api("org.postgresql:postgresql:42.7.4")
     api("com.zaxxer:HikariCP:6.0.0")
+
+    // FIXME: DEPRECATED
     api("org.flywaydb:flyway-database-postgresql:10.18.2")
 
     testImplementation("com.h2database:h2:2.3.232")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation(kotlin("test"))
 }

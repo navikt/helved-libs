@@ -25,6 +25,7 @@ object Postgres {
             }.apply(hikariConfig)
         )
 
+    @Deprecated("", replaceWith = ReplaceWith("Migrator.migrate()"))
     fun DataSource.migrate() {
         Flyway
             .configure()
