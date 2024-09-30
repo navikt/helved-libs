@@ -36,7 +36,7 @@ class MigrationTest {
     }
 
     @Test
-    fun `allow no files`() = runTest {
+    fun `allow no files`() = runTest(ctx) {
         Migrator(File("test/migrations/empty"), ctx)
     }
 
