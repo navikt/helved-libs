@@ -185,7 +185,7 @@ internal data class Migration(
     }
 }
 
-private val DIGIT_PATTERN = Regex("\\d")
+private val DIGIT_PATTERN = Regex("\\d+")
 
 private fun version(name: String): Int {
     return DIGIT_PATTERN.findAll(name)
