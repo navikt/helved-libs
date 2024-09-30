@@ -92,7 +92,7 @@ private val utsjekk = PostgresConfig(
 private val h2 = PostgresConfig(
     host = "stub",
     port = "5432",
-    database = "test_db",
+    database = "migration_db",
     username = "sa",
     password = "",
     url = "jdbc:h2:mem:test_db;MODE=PostgreSQL",

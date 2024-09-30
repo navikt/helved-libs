@@ -66,3 +66,33 @@ subprojects {
         }
     }
 }
+
+private val deps = mutableSetOf<File>()
+subprojects {
+    task("deps") {
+        deps += (fileTree("${gradle.gradleHomeDir}/lib") +
+                fileTree("${gradle.gradleUserHomeDir}/caches/${gradle.gradleVersion}/generated-gradle-jars") +
+                fileTree("${gradle.gradleUserHomeDir}/caches/modules-2/files-2.1"))
+            .filter { it.extension == "jar" }
+            .files
+
+        deps += (project.properties["gradleKotlinDsl.accessorsClassPath"] as? org.gradle.kotlin.dsl.accessors.AccessorsClassPath)
+            ?.bin
+            ?.asFiles
+            ?: emptyList()
+
+        deps.filter { it.extension == "jar" || it.isDirectory }
+            .map { it.absolutePath }
+            .toSet()
+            .joinToString(":")
+            .let { classpath ->
+                File(project.rootDir, "kls-classpath").apply {
+                    delete()
+                    appendText("#/bin/bash\n")
+                    appendText("echo ")
+                    appendText(classpath)
+                    setExecutable(true)
+                }
+            }
+    }
+}

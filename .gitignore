@@ -21,3 +21,4 @@ src/generated
 
 # LSP (kotlin-language-server)
 *.db
+kls-classpath
