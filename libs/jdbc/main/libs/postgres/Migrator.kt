@@ -28,10 +28,6 @@ class Migrator(location: File, context: CoroutineContext) {
                 .filter { f -> f.extension == "sql" }
         }
 
-        if (files.isEmpty()) {
-            throw MigrationException(MigrationError.NO_FILES)
-        }
-
         runBlocking {
             withContext(context) {
                 transaction {
@@ -118,7 +114,6 @@ enum class MigrationError(val msg: String) {
     NO_DIR("Specified location is not a directory"),
     VERSION_SEQ("A version was not incremented by 1"),
     FILENAME("Version must be included in sql-filename"),
-    NO_FILES("no sql files found in location"),
     MISSING_SCRIPT("migration script applied is missing in location"),
 }
 

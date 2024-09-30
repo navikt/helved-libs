@@ -36,11 +36,8 @@ class MigrationTest {
     }
 
     @Test
-    fun `location contains no files`() = runTest {
-        val err = assertThrows<MigrationException> {
-            Migrator(File("test/migrations/empty"), ctx)
-        }
-        assertEquals(MigrationError.NO_FILES.msg, err.message)
+    fun `allow no files`() = runTest {
+        Migrator(File("test/migrations/empty"), ctx)
     }
 
     @Test
