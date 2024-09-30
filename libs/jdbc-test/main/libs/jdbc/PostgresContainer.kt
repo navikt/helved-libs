@@ -1,15 +1,11 @@
 package libs.jdbc
 
+import libs.postgres.JdbcConfig
+import libs.postgres.Migrator
 import libs.postgres.Postgres
-import libs.postgres.Postgres.migrate
-import libs.postgres.PostgresConfig
-import libs.postgres.concurrency.CoroutineDatasource
-import libs.postgres.transaction
 import libs.utils.env
 import org.testcontainers.containers.PostgreSQLContainer
-import java.sql.Connection
 import javax.sql.DataSource
-import kotlin.coroutines.CoroutineContext
 
 class PostgresContainer(appname: String) : AutoCloseable {
     private val container = PostgreSQLContainer("postgres:15").apply {
@@ -34,13 +30,12 @@ class PostgresContainer(appname: String) : AutoCloseable {
             idleTimeout = 10_000
             connectionTimeout = 5_000
             maxLifetime = 900_000
-        }.apply {
-            migrate()
         }
     }
 
+
     val config by lazy {
-        PostgresConfig(
+        JdbcConfig(
             host = container.host,
             port = container.firstMappedPort.toString(),
             database = container.databaseName,
@@ -49,11 +44,9 @@ class PostgresContainer(appname: String) : AutoCloseable {
         )
     }
 
-    val context: CoroutineContext by lazy {
-        CoroutineDatasource(datasource)
-    }
+    suspend fun migrate() = Migrator(config.migrations, Postgres.context).migrate()
 
-    fun <T> transaction(block: (Connection) -> T): T = datasource.transaction(block)
+    //    fun <T> transaction(block: (Connection) -> T): T = datasource.transaction(block)
     fun <T> withDatasource(block: (DataSource) -> T): T = block(datasource)
 
     override fun close() {

@@ -2,9 +2,9 @@ package libs.jdbc
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import libs.postgres.JdbcConfig
+import libs.postgres.Migrator
 import libs.postgres.Postgres
-import libs.postgres.Postgres.migrate
-import libs.postgres.PostgresConfig
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
@@ -18,7 +18,7 @@ abstract class H2 {
     }
 
     val config by lazy {
-        PostgresConfig(
+        JdbcConfig(
             host = "stub",
             port = "5432",
             database = "test_db",
@@ -29,8 +29,10 @@ abstract class H2 {
         )
     }
 
-    private val datasource: DataSource = Postgres.initialize(config).apply { migrate() }
+    private val datasource: DataSource = Postgres.initialize(config)
     private val scope = CoroutineScope(h2)
+
+    suspend fun migrate() = Migrator(config.migrations, h2).migrate()
 
     suspend fun clear(table: String) =
         scope.async {

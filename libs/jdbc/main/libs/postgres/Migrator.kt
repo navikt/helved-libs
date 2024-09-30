@@ -14,7 +14,7 @@ import java.sql.ResultSet
 import java.time.LocalDateTime
 import kotlin.coroutines.CoroutineContext
 
-class Migrator(location: File, ctx: CoroutineContext) {
+class Migrator(location: File, context: CoroutineContext) {
     private lateinit var files: List<File>
 
     init {
@@ -33,7 +33,7 @@ class Migrator(location: File, ctx: CoroutineContext) {
         }
 
         runBlocking {
-            withContext(ctx) {
+            withContext(context) {
                 transaction {
                     val sql = Resource.read("/migrations.sql")
                     coroutineContext.connection.prepareStatement(sql).execute()

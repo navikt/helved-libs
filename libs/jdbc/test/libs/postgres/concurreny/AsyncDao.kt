@@ -11,7 +11,7 @@ internal data class AsyncDao(
 ) {
     suspend fun insert() {
         coroutineContext.connection
-            .prepareStatement("INSERT INTO test (id, data) values (?, ?)").use {
+            .prepareStatement("INSERT INTO TEST_TABLE (id, data) values (?, ?)").use {
                 it.setObject(1, id)
                 it.setObject(2, data)
                 it.executeUpdate()
@@ -25,7 +25,7 @@ internal data class AsyncDao(
 
     companion object {
         suspend fun count(): Int = coroutineContext.connection
-            .prepareStatement("SELECT count(*) FROM test").use { stmt ->
+            .prepareStatement("SELECT count(*) FROM TEST_TABLE").use { stmt ->
                 stmt.executeQuery()
                     .map { it.getInt(1) }
                     .singleOrNull() ?: 0

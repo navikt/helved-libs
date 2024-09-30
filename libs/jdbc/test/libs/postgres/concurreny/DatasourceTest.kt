@@ -1,25 +1,31 @@
 package libs.postgres.concurreny
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
-import libs.postgres.H2
-import libs.postgres.concurrency.CoroutineDatasource
+import kotlinx.coroutines.test.runTest
+import libs.postgres.JdbcConfig
+import libs.postgres.Postgres
 import libs.postgres.concurrency.datasource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-class DatasourceTest : H2() {
-    private val scope = CoroutineScope(Dispatchers.IO + CoroutineDatasource(datasource))
+class DatasourceTest {
+    private val datasource = Postgres.initialize(
+        JdbcConfig(
+            host = "stub",
+            port = "5432",
+            database = "datasource_db",
+            username = "sa",
+            password = "",
+            url = "jdbc:h2:mem:datasource_db;MODE=PostgreSQL",
+            driver = "org.h2.Driver",
+        )
+    )
 
     @Test
-    fun `can be in context`() = runBlocking {
-        scope.async {
-            val actual = coroutineContext.datasource
-            assertEquals(datasource, actual)
-        }.await()
+    fun `can be in context`() = runTest(Postgres.context) {
+        val actual = coroutineContext.datasource
+        assertEquals(datasource, actual)
     }
 
     @Test

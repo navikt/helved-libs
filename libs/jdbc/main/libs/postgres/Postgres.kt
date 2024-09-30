@@ -2,16 +2,15 @@ package libs.postgres
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import libs.utils.appLog
-import libs.utils.secureLog
-import org.flywaydb.core.Flyway
-import java.sql.Connection
+import libs.postgres.concurrency.CoroutineDatasource
 import java.sql.ResultSet
 import javax.sql.DataSource
 
 object Postgres {
+    lateinit var context: CoroutineDatasource
+
     fun initialize(
-        config: PostgresConfig,
+        config: JdbcConfig,
         hikariConfig: HikariConfig.() -> Unit = {},
     ): DataSource =
         HikariDataSource(
@@ -23,16 +22,9 @@ object Postgres {
                 minimumIdle = 1
                 maximumPoolSize = 8
             }.apply(hikariConfig)
-        )
-
-    @Deprecated("", replaceWith = ReplaceWith("Migrator.migrate()"))
-    fun DataSource.migrate() {
-        Flyway
-            .configure()
-            .dataSource(this)
-            .load()
-            .migrate()
-    }
+        ).also {
+            context = CoroutineDatasource(it)
+        }
 }
 
 fun <T : Any> ResultSet.asyncMap(block: (ResultSet) -> T): Sequence<T> =
@@ -44,20 +36,3 @@ fun <T : Any> ResultSet.map(block: (ResultSet) -> T): List<T> =
     sequence {
         while (next()) yield(block(this@map))
     }.toList()
-
-fun <T> DataSource.transaction(block: (Connection) -> T): T {
-    return this.connection.use { connection ->
-        runCatching {
-            connection.autoCommit = false
-            block(connection)
-        }.onSuccess {
-            connection.commit()
-            connection.autoCommit = true
-        }.onFailure {
-            appLog.error("Rolling back database transaction, stacktrace in secureLogs")
-            secureLog.error("Rolling back database transaction", it)
-            connection.rollback()
-            connection.autoCommit = true
-        }.getOrThrow()
-    }
-}

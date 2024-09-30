@@ -20,15 +20,15 @@ class MigrationTest {
         runBlocking {
             withContext(ctx) {
                 transaction {
-                    coroutineContext.connection.prepareStatement("TRUNCATE TABLE migrations").execute()
-                    coroutineContext.connection.prepareStatement("DROP TABLE IF EXISTS test_table, test_table2").execute()
+                    coroutineContext.connection.prepareStatement("DROP TABLE IF EXISTS migrations, test_table, test_table2")
+                        .execute()
                 }
             }
         }
     }
 
     @Test
-    fun `location is not a dir`() = runTest(ctx) {
+    fun `location is not a dir`() = runTest {
         val err = assertThrows<MigrationException> {
             Migrator(File("test/migrations/valid/1.sql"), ctx)
         }
@@ -36,7 +36,7 @@ class MigrationTest {
     }
 
     @Test
-    fun `location contains no files`() = runTest(ctx) {
+    fun `location contains no files`() = runTest {
         val err = assertThrows<MigrationException> {
             Migrator(File("test/migrations/empty"), ctx)
         }
@@ -81,7 +81,7 @@ class MigrationTest {
     }
 }
 
-private val utsjekk = PostgresConfig(
+private val utsjekk = JdbcConfig(
     host = "localhost",
     port = "32768",
     database = "test",
@@ -89,7 +89,7 @@ private val utsjekk = PostgresConfig(
     password = "test",
 )
 
-private val h2 = PostgresConfig(
+private val h2 = JdbcConfig(
     host = "stub",
     port = "5432",
     database = "test_db",
