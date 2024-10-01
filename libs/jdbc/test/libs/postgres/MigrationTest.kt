@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MigrationTest {
     private val ctx = CoroutineDatasource(Postgres.initialize(h2))
@@ -32,7 +33,17 @@ class MigrationTest {
         val err = assertThrows<MigrationException> {
             Migrator(File("test/migrations/valid/1.sql"), ctx)
         }
-        assertEquals(MigrationError.NO_DIR.msg, err.message)
+
+        val expected = MigrationError.NO_DIR.msg
+        val actual = requireNotNull(err.message)
+
+        assertTrue(
+            actual.contains(expected),
+            """
+               excpected: $expected
+               actual:    $actual
+            """.trimMargin()
+        )
     }
 
     @Test

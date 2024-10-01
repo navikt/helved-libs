@@ -19,7 +19,7 @@ class Migrator(location: File, context: CoroutineContext) {
 
     init {
         if (!location.isDirectory) {
-            throw MigrationException(MigrationError.NO_DIR)
+            throw MigrationException(MigrationError.NO_DIR, location.absolutePath)
         }
 
         location.listFiles()?.let { listFiles ->
@@ -117,7 +117,10 @@ enum class MigrationError(val msg: String) {
     MISSING_SCRIPT("migration script applied is missing in location"),
 }
 
-class MigrationException(error: MigrationError) : RuntimeException(error.msg)
+class MigrationException(
+    error: MigrationError,
+    msg: String? = null,
+) : RuntimeException(msg?.let { "${error.msg}: $msg" } ?: error.msg)
 
 internal data class MigrationWithFile(val migration: Migration, val file: File) {
     companion object {
