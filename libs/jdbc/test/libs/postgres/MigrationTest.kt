@@ -75,7 +75,7 @@ class MigrationTest {
         val err = assertThrows<MigrationException> {
             migrator.migrate()
         }
-        assertEquals(MigrationError.VERSION_SEQ.msg, err.message)
+        assertEquals("A version was not incremented by 1: order: 1, 3", err.message)
     }
 
     @Test

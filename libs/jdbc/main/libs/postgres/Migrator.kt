@@ -49,7 +49,8 @@ class Migrator(location: File, context: CoroutineContext) {
         // Versions are sequenced
         val sequences = candidates.windowed(2, 1) { (a, b) -> isValidSequence(a.migration, b.migration) }
         if (sequences.any { !it }) {
-            throw MigrationException(MigrationError.VERSION_SEQ)
+            val order = candidates.map { it.migration.version }.joinToString()
+            throw MigrationException(MigrationError.VERSION_SEQ, "order: $order")
         }
 
         // Checksum is not changed
