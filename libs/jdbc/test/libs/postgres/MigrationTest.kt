@@ -87,15 +87,12 @@ class MigrationTest {
         }
         assertEquals(MigrationError.CHECKSUM.msg, err.message)
     }
-}
 
-private val utsjekk = JdbcConfig(
-    host = "localhost",
-    port = "32768",
-    database = "test",
-    username = "test",
-    password = "test",
-)
+    @Test
+    fun `can read utf8 filenames`() = runTest(ctx) {
+        Migrator(File("test/migrations/utf8"), ctx).migrate()
+    }
+}
 
 private val h2 = JdbcConfig(
     host = "stub",
