@@ -1,22 +1,13 @@
 package libs.jdbc
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import libs.postgres.JdbcConfig
-import libs.postgres.Migrator
 import libs.postgres.Postgres
-import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.utils.appLog
-import javax.sql.DataSource
-import kotlin.coroutines.CoroutineContext
 
-abstract class H2 {
-    val h2: CoroutineContext by lazy {
-        CoroutineDatasource(datasource)
-    }
-
+object H2 {
     val config by lazy {
         JdbcConfig(
             host = "stub",
@@ -29,19 +20,13 @@ abstract class H2 {
         )
     }
 
-    private val datasource: DataSource = Postgres.initialize(config)
-    private val scope = CoroutineScope(h2)
-
-    suspend fun migrate() = Migrator(config.migrations, h2).migrate()
-
-    suspend fun clear(table: String) =
-        scope.async {
-            transaction {
-                coroutineContext.connection.prepareStatement("SET REFERENTIAL_INTEGRITY FALSE").execute()
-                coroutineContext.connection.prepareStatement("TRUNCATE TABLE $table").execute()
-                coroutineContext.connection.prepareStatement("SET REFERENTIAL_INTEGRITY TRUE").execute()
-            }
-        }.await().also {
+    suspend fun clear(table: String) = withContext(Postgres.context) {
+        transaction {
+            coroutineContext.connection.prepareStatement("SET REFERENTIAL_INTEGRITY FALSE").execute()
+            coroutineContext.connection.prepareStatement("TRUNCATE TABLE $table").execute()
+            coroutineContext.connection.prepareStatement("SET REFERENTIAL_INTEGRITY TRUE").execute()
+        }.also {
             appLog.info("table '$table' trunctated.")
         }
+    }
 }
