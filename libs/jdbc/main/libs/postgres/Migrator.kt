@@ -12,31 +12,12 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 import java.sql.ResultSet
 import java.time.LocalDateTime
-import kotlin.coroutines.CoroutineContext
 
-class Migrator(location: File, context: CoroutineContext) {
-    private lateinit var files: List<File>
+class Migrator(location: File) {
+    private var files = location.getSqlFiles()
 
     init {
-        if (!location.isDirectory) {
-            throw MigrationException(MigrationError.NO_DIR, location.absolutePath)
-        }
-
-        location.listFiles()?.let { listFiles ->
-            files = listFiles
-                .filter { f -> f.isFile }
-                .filter { f -> f.extension == "sql" }
-        }
-
-        runBlocking {
-            withContext(context) {
-                transaction {
-                    val sql = Resource.read("/migrations.sql")
-                    coroutineContext.connection.prepareStatement(sql).execute()
-                    appLog.debug(sql)
-                }
-            }
-        }
+        runBlocking { executeSql(Resource.read("/migrations.sql")) }
     }
 
     suspend fun migrate() {
@@ -108,6 +89,14 @@ class Migrator(location: File, context: CoroutineContext) {
     private fun isValidSequence(left: Migration, right: Migration): Boolean {
         return left.version == right.version - 1
     }
+
+    private suspend fun executeSql(sql: String) =
+        withContext(Postgres.context) {
+            transaction {
+                coroutineContext.connection.prepareStatement(sql).execute()
+                appLog.debug(sql)
+            }
+        }
 }
 
 enum class MigrationError(val msg: String) {
@@ -117,6 +106,10 @@ enum class MigrationError(val msg: String) {
     FILENAME("Version must be included in sql-filename"),
     MISSING_SCRIPT("migration script applied is missing in location"),
 }
+
+private fun File.getSqlFiles(): List<File> = listFiles()
+    ?.let { files -> files.filter { it.extension == "sql" } }
+    ?: throw MigrationException(MigrationError.NO_DIR, absolutePath)
 
 class MigrationException(
     error: MigrationError,

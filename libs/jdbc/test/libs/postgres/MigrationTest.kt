@@ -31,7 +31,7 @@ class MigrationTest {
     @Test
     fun `location is not a dir`() = runTest {
         val err = assertThrows<MigrationException> {
-            Migrator(File("test/migrations/valid/1.sql"), ctx)
+            Migrator(File("test/migrations/valid/1.sql"))
         }
 
         val expected = MigrationError.NO_DIR.msg
@@ -48,30 +48,30 @@ class MigrationTest {
 
     @Test
     fun `allow no files`() = runTest(ctx) {
-        Migrator(File("test/migrations/empty"), ctx)
+        Migrator(File("test/migrations/empty"))
     }
 
     @Test
     fun `can create migrations table`() = runTest {
-        Migrator(File("test/migrations/valid"), ctx)
-        Migrator(File("test/migrations/valid"), ctx)
+        Migrator(File("test/migrations/valid"))
+        Migrator(File("test/migrations/valid"))
     }
 
     @Test
     fun `can migrate scripts`() = runTest(ctx) {
-        Migrator(File("test/migrations/valid"), ctx).migrate()
+        Migrator(File("test/migrations/valid")).migrate()
     }
 
     @Test
     fun `migrations are idempotent`() = runTest(ctx) {
-        val migrator = Migrator(File("test/migrations/valid"), ctx)
+        val migrator = Migrator(File("test/migrations/valid"))
         migrator.migrate()
         migrator.migrate()
     }
 
     @Test
     fun `sequence is corrupted`() = runTest(ctx) {
-        val migrator = Migrator(File("test/migrations/wrong_seq"), ctx)
+        val migrator = Migrator(File("test/migrations/wrong_seq"))
         val err = assertThrows<MigrationException> {
             migrator.migrate()
         }
@@ -80,17 +80,17 @@ class MigrationTest {
 
     @Test
     fun `checksum is corrupted`() = runTest(ctx) {
-        Migrator(File("test/migrations/valid"), ctx).migrate()
+        Migrator(File("test/migrations/valid")).migrate()
 
         val err = assertThrows<MigrationException> {
-            Migrator(File("test/migrations/wrong_checksum"), ctx).migrate()
+            Migrator(File("test/migrations/wrong_checksum")).migrate()
         }
         assertEquals(MigrationError.CHECKSUM.msg, err.message)
     }
 
     @Test
     fun `can read utf8 filenames`() = runTest(ctx) {
-        Migrator(File("test/migrations/utf8"), ctx).migrate()
+        Migrator(File("test/migrations/utf8")).migrate()
     }
 }
 

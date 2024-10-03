@@ -36,7 +36,7 @@ class TransactionTest {
     fun setup() {
         runBlocking {
             withContext(Postgres.context) {
-                Migrator(File("test/migrations/valid"), Postgres.context).migrate()
+                Migrator(File("test/migrations/valid")).migrate()
             }
         }
     }
