@@ -33,7 +33,7 @@ abstract class Scheduler<T>(
     /**
      * What to do when an error occurs
      */
-    abstract suspend fun onError(err: Throwable)
+    abstract suspend fun onError(fed: T, err: Throwable)
 
     /**
      * If you are using leader elections, you may allow only the leader to feed the scheduler.
@@ -55,14 +55,14 @@ abstract class Scheduler<T>(
 
     private val job: Job = CoroutineScope(context).launch {
         while (isActive) {
-            try {
-                flow().distinctUntilChanged().collect {
+            flow().distinctUntilChanged().collect {
+                try {
                     task(it)
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    onError(it, e)
+                    delay(errorCooldownMs)
                 }
-            } catch (e: Throwable) {
-                if (e is CancellationException) throw e
-                onError(e)
-                delay(errorCooldownMs)
             }
         }
     }

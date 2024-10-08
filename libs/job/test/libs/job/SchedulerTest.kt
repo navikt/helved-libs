@@ -39,7 +39,7 @@ class Datasource(private val data: MutableMap<Int, Boolean>) {
 
 class TaskScheduler(private val datasource: Datasource) : Scheduler<Int>(120, 1) {
     override suspend fun feed(): List<Int> = datasource.selectUncommitted()
-    override suspend fun onError(err: Throwable) = fail("Task failed", err)
+    override suspend fun onError(fed: Int, err: Throwable) = fail("Task failed", err)
 
     override suspend fun task(fed: Int) {
         println("task for $fed")
