@@ -47,7 +47,7 @@ abstract class MQConsumer(
             appLog.debug("Consuming message on ${queue.baseQueueName}")
             mq.transacted(context) {
                 val jmsEnkoding = if (it.propertyExists(WMQConstants.JMS_IBM_ENCODING)) it.getIntProperty(WMQConstants.JMS_IBM_ENCODING) else null
-                val jmsCharSet = if (it.propertyExists(WMQConstants.JMS_IBM_CHARACTER_SET)) it.getIntProperty(WMQConstants.JMS_IBM_CHARACTER_SET) else null
+                val jmsCharSet = if (it.propertyExists(WMQConstants.JMS_IBM_CHARACTER_SET)) it.getStringProperty(WMQConstants.JMS_IBM_CHARACTER_SET) else null
                 appLog.info("JMS-enkoding: $jmsEnkoding, charset: $jmsCharSet")
                 try {
                     it as TextMessage
