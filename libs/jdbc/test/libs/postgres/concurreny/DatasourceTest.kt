@@ -3,14 +3,14 @@ package libs.postgres.concurreny
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import libs.postgres.JdbcConfig
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.datasource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class DatasourceTest {
-    private val datasource = Postgres.initialize(
+    private val datasource = Jdbc.initialize(
         JdbcConfig(
             host = "stub",
             port = "5432",
@@ -23,7 +23,7 @@ class DatasourceTest {
     )
 
     @Test
-    fun `can be in context`() = runTest(Postgres.context) {
+    fun `can be in context`() = runTest(Jdbc.context) {
         val actual = coroutineContext.datasource
         assertEquals(datasource, actual)
     }

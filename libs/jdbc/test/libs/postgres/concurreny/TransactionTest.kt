@@ -5,7 +5,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import libs.postgres.JdbcConfig
 import libs.postgres.Migrator
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.CoroutineTransaction
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
@@ -19,7 +19,7 @@ import java.util.*
 
 class TransactionTest {
     init {
-        Postgres.initialize(
+        Jdbc.initialize(
             JdbcConfig(
                 host = "stub",
                 port = "5432",
@@ -35,7 +35,7 @@ class TransactionTest {
     @BeforeEach
     fun setup() {
         runBlocking {
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 Migrator(File("test/migrations/valid")).migrate()
             }
         }
@@ -44,7 +44,7 @@ class TransactionTest {
     @AfterEach
     fun cleanup() {
         runBlocking {
-            withContext(Postgres.context) {
+            withContext(Jdbc.context) {
                 transaction {
                     coroutineContext.connection.prepareStatement("DROP TABLE IF EXISTS migrations, test_table, test_table2")
                         .execute()
@@ -54,14 +54,14 @@ class TransactionTest {
     }
 
     @Test
-    fun `can be in context`() = runTest(Postgres.context) {
+    fun `can be in context`() = runTest(Jdbc.context) {
         transaction {
             assertEquals(0, AsyncDao.count())
         }
     }
 
     @Test
-    fun `fails without context`() = runTest(Postgres.context) {
+    fun `fails without context`() = runTest(Jdbc.context) {
         val err = assertThrows<IllegalStateException> {
             runBlocking {
                 AsyncDao.count()
@@ -72,7 +72,7 @@ class TransactionTest {
     }
 
     @Test
-    fun rollback() = runTest(Postgres.context) {
+    fun rollback() = runTest(Jdbc.context) {
         transaction {
             val err = assertThrows<IllegalStateException> {
                 AsyncDao(UUID.randomUUID(), "two").insertAndThrow()
@@ -82,7 +82,7 @@ class TransactionTest {
     }
 
     @Test
-    fun `can be nested with rollbacks`() = runTest(Postgres.context) {
+    fun `can be nested with rollbacks`() = runTest(Jdbc.context) {
         transaction {
             assertEquals(0, AsyncDao.count())
         }
@@ -104,7 +104,7 @@ class TransactionTest {
     }
 
     @Test
-    fun `can be nested with commits`() = runTest(Postgres.context) {
+    fun `can be nested with commits`() = runTest(Jdbc.context) {
         runCatching {
             transaction {
                 assertEquals(0, AsyncDao.count())

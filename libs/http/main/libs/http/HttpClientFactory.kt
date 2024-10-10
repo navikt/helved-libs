@@ -10,8 +10,10 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.serialization.jackson.*
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
+
+private val httpLog = logger("http")
 
 object HttpClientFactory {
     fun new(
@@ -64,7 +66,7 @@ class ClientLogger(level: LogLevel) : Logger {
         /**
          * HTTP code, method and url is logged
          */
-        LogLevel.INFO, LogLevel.NONE -> appLog
+        LogLevel.INFO, LogLevel.NONE -> httpLog
 
         /**
          *  HTTP code, method, url, headers request body and response body is logged

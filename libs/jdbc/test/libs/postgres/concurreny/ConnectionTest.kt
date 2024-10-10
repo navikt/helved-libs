@@ -2,7 +2,7 @@ package libs.postgres.concurreny
 
 import kotlinx.coroutines.test.runTest
 import libs.postgres.JdbcConfig
-import libs.postgres.Postgres
+import libs.postgres.Jdbc
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -12,7 +12,7 @@ import org.junit.jupiter.api.assertThrows
 
 class ConnectionTest {
     init {
-        Postgres.initialize(
+        Jdbc.initialize(
             JdbcConfig(
                 host = "stub",
                 port = "5432",
@@ -26,14 +26,14 @@ class ConnectionTest {
     }
 
     @Test
-    fun `can be in context`() = runTest(Postgres.context) {
+    fun `can be in context`() = runTest(Jdbc.context) {
         transaction {
             assertNotNull(coroutineContext.connection)
         }
     }
 
     @Test
-    fun `fails without context`() = runTest(Postgres.context) {
+    fun `fails without context`() = runTest(Jdbc.context) {
         val err = assertThrows<IllegalStateException> {
             coroutineContext.connection
         }

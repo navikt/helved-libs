@@ -2,13 +2,15 @@ package libs.task
 
 import libs.postgres.concurrency.connection
 import libs.postgres.map
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.coroutines.coroutineContext
+
+private val taskLog = logger("task")
 
 data class TaskHistoryDao(
     val id: UUID = UUID.randomUUID(),
@@ -34,7 +36,7 @@ data class TaskHistoryDao(
             stmt.setString(6, status.name)
             stmt.setString(7, message)
 
-            appLog.debug(sql)
+            taskLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -49,7 +51,7 @@ data class TaskHistoryDao(
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 stmt.setObject(1, taskId)
 
-                appLog.debug(sql)
+                taskLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
             }

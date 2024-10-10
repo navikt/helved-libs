@@ -2,13 +2,15 @@ package libs.task
 
 import libs.postgres.concurrency.connection
 import libs.postgres.map
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
 import java.sql.ResultSet
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.util.*
 import kotlin.coroutines.coroutineContext
+
+private val taskLog = logger("task")
 
 data class TaskDao(
     val id: UUID = UUID.randomUUID(),
@@ -38,7 +40,7 @@ data class TaskDao(
             stmt.setTimestamp(8, Timestamp.valueOf(scheduledFor))
             stmt.setString(9, message)
 
-            appLog.debug(sql)
+            taskLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -62,7 +64,7 @@ data class TaskDao(
             stmt.setString(8, message)
             stmt.setObject(9, id)
 
-            appLog.debug(sql)
+            taskLog.debug(sql)
             secureLog.debug(stmt.toString())
             stmt.executeUpdate()
         }
@@ -123,7 +125,7 @@ data class TaskDao(
                 limit?.let { stmt.setInt(position++, it) }
                 offset?.let { stmt.setInt(position++, it) }
 
-                appLog.debug(sql)
+                taskLog.debug(sql)
                 secureLog.debug(stmt.toString())
                 stmt.executeQuery().map(::from)
             }
@@ -169,7 +171,7 @@ data class TaskDao(
                     conditions.scheduledFor?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
                     conditions.message?.let { stmt.setString(position++, it) }
 
-                    appLog.debug(sql)
+                    taskLog.debug(sql)
                     secureLog.debug(stmt.toString())
                     stmt.executeQuery().map {
                         it.getInt(1)

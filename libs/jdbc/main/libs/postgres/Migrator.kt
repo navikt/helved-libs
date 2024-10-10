@@ -5,7 +5,7 @@ import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.utils.Resource
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
 import java.io.File
 import java.nio.charset.Charset
@@ -13,8 +13,10 @@ import java.security.MessageDigest
 import java.sql.ResultSet
 import java.time.LocalDateTime
 
+
 class Migrator(location: File) {
     private var files = location.getSqlFiles()
+    private val jdbcLog = logger("jdbc")
 
     init {
         runBlocking { executeSql(Resource.read("/migrations.sql")) }
@@ -65,10 +67,10 @@ class Migrator(location: File) {
                             else -> Migration.update(migration.copy(success = true))
                         }
 
-                        appLog.info("Migrated ${candidate.file.name} successfully")
+                        jdbcLog.info("Migrated ${candidate.file.name} successfully")
                     }
                 } catch (e: Exception) {
-                    appLog.info("Migration of ${candidate.file.name} failed")
+                    jdbcLog.info("Migration of ${candidate.file.name} failed")
                     secureLog.error("migration of ${candidate.file.name} failed", e)
                 }
             }
@@ -82,7 +84,7 @@ class Migrator(location: File) {
         transaction {
             val sql = file.readText(Charset.forName("UTF-8"))
             coroutineContext.connection.prepareStatement(sql).execute()
-            appLog.debug(sql)
+            jdbcLog.debug(sql)
         }
     }
 
@@ -91,10 +93,10 @@ class Migrator(location: File) {
     }
 
     private suspend fun executeSql(sql: String) =
-        withContext(Postgres.context) {
+        withContext(Jdbc.context) {
             transaction {
                 coroutineContext.connection.prepareStatement(sql).execute()
-                appLog.debug(sql)
+                jdbcLog.debug(sql)
             }
         }
 }

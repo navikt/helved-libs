@@ -5,13 +5,15 @@ import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
 import java.util.*
 import javax.jms.JMSContext
 import javax.jms.JMSProducer
 import javax.jms.MessageListener
 import javax.jms.TextMessage
+
+private val mqLog = logger("mq")
 
 class MQProducer(
     private val mq: MQ,
@@ -21,7 +23,7 @@ class MQProducer(
         message: String,
         config: JMSProducer.() -> Unit = {},
     ) {
-        appLog.debug("Producing message on ${queue.baseQueueName}")
+        mqLog.info("Producing message on ${queue.baseQueueName}")
         mq.transaction { ctx ->
             ctx.clientID = UUID.randomUUID().toString()
             val producer = ctx.createProducer().apply(config)
@@ -44,7 +46,7 @@ abstract class MQConsumer(
 
     private val consumer = context.createConsumer(queue).apply {
         messageListener = MessageListener {
-            appLog.debug("Consuming message on ${queue.baseQueueName}")
+            mqLog.info("Consuming message on ${queue.baseQueueName}")
             mq.transacted(context) {
                 onMessage(it as TextMessage)
             }
@@ -86,7 +88,7 @@ class MQ(private val config: MQConfig) {
         )
 
     fun depth(queue: MQQueue): Int {
-        appLog.debug("Checking queue depth for ${queue.baseQueueName}")
+        mqLog.debug("Checking queue depth for ${queue.baseQueueName}")
         return transaction { ctx ->
             ctx.createBrowser(queue).use { browse ->
                 browse.enumeration.toList().size
@@ -95,16 +97,16 @@ class MQ(private val config: MQConfig) {
     }
 
     internal fun <T : Any> transacted(ctx: JMSContext, block: () -> T): T {
-        appLog.debug("MQ transaction created {}", ctx)
+        mqLog.debug("MQ transaction created {}", ctx)
 
         val result = runCatching {
             block()
         }.onSuccess {
             ctx.commit()
-            appLog.debug("MQ transaction committed {}", ctx)
+            mqLog.debug("MQ transaction committed {}", ctx)
         }.onFailure {
             ctx.rollback()
-            appLog.error("MQ transaction rolled back {}, please check secureLogs or BOQ (backout queue)", ctx)
+            mqLog.error("MQ transaction rolled back {}, please check secureLogs or BOQ (backout queue)", ctx)
             secureLog.error("MQ transaction rolled back {}", ctx, it)
         }
 

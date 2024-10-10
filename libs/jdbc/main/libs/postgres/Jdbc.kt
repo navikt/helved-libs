@@ -3,10 +3,12 @@ package libs.postgres
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import libs.postgres.concurrency.CoroutineDatasource
+import libs.utils.env
+import java.io.File
 import java.sql.ResultSet
 import javax.sql.DataSource
 
-object Postgres {
+object Jdbc {
     lateinit var context: CoroutineDatasource
 
     fun initialize(
@@ -27,10 +29,16 @@ object Postgres {
         }
 }
 
-fun <T : Any> ResultSet.asyncMap(block: (ResultSet) -> T): Sequence<T> =
-    sequence {
-        while (next()) yield(block(this@asyncMap))
-    }
+data class JdbcConfig(
+    val host: String = env("DB_HOST"),
+    val port: String = env("DB_PORT"),
+    val database: String = env("DB_DATABASE"),
+    val username: String = env("DB_USERNAME"),
+    val password: String = env("DB_PASSWORD"),
+    val url: String = "jdbc:postgresql://$host:$port/$database",
+    val driver: String = "org.postgresql.Driver",
+    val migrations: File = File("main/migrations")
+)
 
 fun <T : Any> ResultSet.map(block: (ResultSet) -> T): List<T> =
     sequence {

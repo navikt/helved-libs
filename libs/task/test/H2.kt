@@ -1,20 +1,22 @@
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import libs.postgres.Jdbc
 import libs.postgres.JdbcConfig
-import libs.postgres.Postgres
 import libs.postgres.concurrency.CoroutineDatasource
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.task.TaskDao
 import libs.task.TaskHistoryDao
 import libs.utils.Resource
-import libs.utils.appLog
+import libs.utils.logger
 import kotlin.coroutines.CoroutineContext
+
+private val testLog = logger("test")
 
 object H2 : AutoCloseable {
     init {
         Runtime.getRuntime().addShutdownHook(Thread {
-            appLog.info("Shutting down TestRunner")
+            testLog.info("Shutting down TestRunner")
             close()
         })
     }
@@ -30,7 +32,7 @@ object H2 : AutoCloseable {
             driver = "org.h2.Driver",
         )
     }
-    private val jdbc = Postgres.initialize(config)
+    private val jdbc = Jdbc.initialize(config)
     val context = CoroutineDatasource(jdbc).also {
         runBlocking {
             migrate(it)
@@ -42,7 +44,7 @@ object H2 : AutoCloseable {
             transaction {
                 val sql = Resource.read("/1_task_v2.sql")
                 coroutineContext.connection.prepareStatement(sql).execute()
-                appLog.debug(sql)
+                testLog.debug(sql)
             }
         }
 
@@ -57,6 +59,6 @@ object H2 : AutoCloseable {
                     coroutineContext.connection.prepareStatement("TRUNCATE TABLE $it").execute()
                     coroutineContext.connection.prepareStatement("SET REFERENTIAL_INTEGRITY TRUE").execute()
                 }
-            }.also { tables.forEach { appLog.info("table '$it' truncated.") } }
+            }.also { tables.forEach { testLog.info("table '$it' truncated.") } }
         }
 }

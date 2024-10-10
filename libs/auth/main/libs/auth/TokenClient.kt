@@ -8,9 +8,11 @@ import io.ktor.http.*
 import libs.cache.Cache
 import libs.cache.CacheKey
 import libs.cache.TokenCache
-import libs.utils.appLog
+import libs.utils.logger
 import libs.utils.secureLog
 import java.net.URL
+
+private val authLog = logger("auth")
 
 object TokenProvider {
     const val AZURE = "Azure AD"
@@ -51,7 +53,7 @@ class TokenClient(
         when (status.value) {
             in 200..299 -> return body<T>()
             else -> {
-                appLog.error("Failed to get token from provider: $name")
+                authLog.error("Failed to get token from provider: $name")
                 secureLog.error(
                     """
                     Got HTTP ${status.value} when issuing token from provider: ${request.url}

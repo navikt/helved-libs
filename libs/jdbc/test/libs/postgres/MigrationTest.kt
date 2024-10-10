@@ -14,7 +14,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MigrationTest {
-    private val ctx = CoroutineDatasource(Postgres.initialize(h2))
+    private val ctx = CoroutineDatasource(Jdbc.initialize(h2))
 
     @AfterEach
     fun cleanup() {
