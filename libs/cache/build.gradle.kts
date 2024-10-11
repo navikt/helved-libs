@@ -1,4 +1,4 @@
-val ktorVersion = "2.3.11"
+val ktorVersion = "3.0.0"
 
 dependencies {
     api(project(":libs:utils"))

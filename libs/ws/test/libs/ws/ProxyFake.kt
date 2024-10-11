@@ -18,9 +18,9 @@ internal class ProxyFake : AutoCloseable {
 
     val config
         get() = SoapConfig(
-            host = URI.create("http://localhost:${server.port}/some/soap/endpoint").toURL(),
+            host = URI.create("http://localhost:${server.engine.port}/some/soap/endpoint").toURL(),
             sts = StsConfig(
-                host = URI.create("http://localhost:${server.port}").toURL(),
+                host = URI.create("http://localhost:${server.engine.port}").toURL(),
                 user = "test",
                 pass = "test"
             )

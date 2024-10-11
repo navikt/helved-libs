@@ -6,6 +6,6 @@ dependencies {
     api("com.zaxxer:HikariCP:6.0.0")
 
     testImplementation("com.h2database:h2:2.3.232")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation(kotlin("test"))
 }
