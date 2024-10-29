@@ -11,7 +11,7 @@ suspend fun tryLock(on: String): Boolean = transaction {
     val query = "SELECT PG_TRY_ADVISORY_LOCK(${on.hashCode()})"
     coroutineContext.connection.prepareStatement(query).use { stmt ->
         stmt.execute().also {
-            jdbcLog.info("Locked $on")
+            jdbcLog.debug("Locked $on")
         }
     }
 }
@@ -20,7 +20,7 @@ suspend fun unlock(on: String): Boolean = transaction {
     val query = "SELECT PG_ADVISORY_UNLOCK(${on.hashCode()})"
     coroutineContext.connection.prepareStatement(query).use { stmt ->
         stmt.execute().also {
-            jdbcLog.info("Unlocked $on")
+            jdbcLog.debug("Unlocked $on")
         }
     }
 }
