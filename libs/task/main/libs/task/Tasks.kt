@@ -55,7 +55,12 @@ object Tasks {
         TaskDao.select { it.createdAt = SelectTime(Operator.GE, after) }
     }
 
-    suspend fun rekjør(id: UUID) =
+    suspend fun rerunAll(status: List<Status>, kind: List<Kind>) =
+        transaction {
+            TaskDao.rerunAll(status, kind)
+        }
+
+    suspend fun rerun(id: UUID) =
         transaction {
             val now = LocalDateTime.now()
             val task = TaskDao.select { it.id = id }.single()
@@ -63,7 +68,6 @@ object Tasks {
                 .copy(
                     updatedAt = now,
                     scheduledFor = now,
-                    attempt = task.attempt + 1,
                 ).update()
             TaskHistoryDao(
                 taskId = task.id,
@@ -98,6 +102,25 @@ object Tasks {
             triggeredBy = task.updatedAt,
             status = task.status,
             message = task.message,
+        ).insert()
+    }
+
+    suspend fun complete(id: UUID) = transaction {
+        val task = TaskDao.select { it.id = id }.single()
+
+        task.copy(
+            status = Status.COMPLETE,
+            updatedAt = LocalDateTime.now(),
+            attempt = task.attempt + 1,
+        ).update()
+
+        TaskHistoryDao(
+            taskId = task.id,
+            createdAt = task.createdAt,
+            triggeredAt = task.updatedAt,
+            triggeredBy = task.updatedAt,
+            status = task.status,
+            message = null,
         ).insert()
     }
 

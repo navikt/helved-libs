@@ -1,3 +1,5 @@
+@file:Suppress("NAME_SHADOWING")
+
 package libs.task
 
 import libs.postgres.concurrency.connection
@@ -72,6 +74,35 @@ data class TaskDao(
 
     companion object {
         const val TABLE_NAME = "task_v2"
+
+        suspend fun rerunAll(status: List<Status>, kind: List<Kind>): Int {
+            val status = status.joinToString(",") { "'${it.name}'" }
+            val kind = kind.joinToString(",") { "'${it.name}'" }
+
+            val sql = if (kind.isNotEmpty()) {
+                """
+                UPDATE $TABLE_NAME
+                SET scheduled_for = ?, updated_at = ?
+                WHERE status in ($status) AND kind in ($kind)
+            """.trimIndent()
+            } else {
+                """
+                UPDATE $TABLE_NAME
+                SET scheduled_for = ?, updated_at = ?
+                WHERE status in ($status)
+            """.trimIndent()
+            }
+
+            return coroutineContext.connection.prepareStatement(sql).use { stmt ->
+                val now = LocalDateTime.now()
+                stmt.setTimestamp(1, Timestamp.valueOf(now))
+                stmt.setTimestamp(2, Timestamp.valueOf(now))
+
+                taskLog.debug(sql)
+                secureLog.debug(stmt.toString())
+                stmt.executeUpdate()
+            }
+        }
 
         suspend fun select(
             limit: Int? = null,
