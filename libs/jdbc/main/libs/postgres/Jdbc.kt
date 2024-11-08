@@ -8,9 +8,19 @@ import java.io.File
 import java.sql.ResultSet
 import javax.sql.DataSource
 
+/**
+ * The Jdbc wrapper for managing the datasource
+ */
 object Jdbc {
     lateinit var context: CoroutineDatasource
 
+    /**
+     * Initialize the datasource once.
+     *
+     * @param config - the jdbc configuration
+     * @param hikariConfig - override default hikari configuration
+     * @return the created datasource
+     */
     fun initialize(
         config: JdbcConfig,
         hikariConfig: HikariConfig.() -> Unit = {},

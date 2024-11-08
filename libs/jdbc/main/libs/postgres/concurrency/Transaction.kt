@@ -8,6 +8,13 @@ import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.coroutines.coroutineContext
 
+/**
+ * Create or use current transaction on the coroutine context.
+ * This requires a connection registered on the coroutine context.
+ * 
+ * @param block - the code block to execute
+ * @return T - an arbitrary type, can be Unit
+ */
 @OptIn(ExperimentalContracts::class)
 suspend inline fun <T> transaction(crossinline block: suspend CoroutineScope.() -> T): T {
     contract {

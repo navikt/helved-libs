@@ -14,6 +14,13 @@ import kotlin.coroutines.coroutineContext
 
 private val jdbcLog = logger("jdbc")
 
+/**
+ * Create or reuse the database connection registered on the coroutine context. 
+ * This requires a datasource registered on the coroutine context.
+ * 
+ * @param block - the code block to execute
+ * @return T - an arbitrary type, can be Unit
+ */
 @OptIn(ExperimentalContracts::class)
 suspend inline fun <T> withConnection(crossinline block: suspend CoroutineScope.() -> T): T {
     contract {

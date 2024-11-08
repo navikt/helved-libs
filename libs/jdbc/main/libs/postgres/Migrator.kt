@@ -14,6 +14,13 @@ import java.sql.ResultSet
 import java.time.LocalDateTime
 
 
+/**
+ * A database migration tool.
+ *
+ * @constructor will execute the '/migrations.sql' script on the datasource found on the coroutine context.
+ *
+ * @property location is the classpath-location of the migration scripts.
+ */
 class Migrator(location: File) {
     private var files = location.getSqlFiles()
     private val jdbcLog = logger("jdbc")
@@ -22,6 +29,16 @@ class Migrator(location: File) {
         runBlocking { executeSql(Resource.read("/migrations.sql")) }
     }
 
+    /**
+     * Execute all the migrations scripts.
+     *
+     * - Will skip existing migrations
+     * - Will fail if scripts are changed
+     * - Will fail if scripts are not versioned in sequence
+     * - Will fail if migrated scripts are missing 
+     *
+     * @throws libs.postgres.MigrationException on failure. @see libs.postgres.MigrationError 
+     */
     suspend fun migrate() {
         val migrations = Migration.all().sortedBy { it.version }
         val candidates = files.map(MigrationWithFile::from).sortedBy { it.migration.version }

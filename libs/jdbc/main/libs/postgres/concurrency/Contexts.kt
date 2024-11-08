@@ -5,11 +5,17 @@ import javax.sql.DataSource
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
+/**
+ * Gets the connection from the coroutine context if registered.
+ */
 val CoroutineContext.connection: Connection
     get() = get(CoroutineConnection)
         ?.connection
         ?: error("Connection not in context")
 
+/**
+ * Gets the datasource from the coroutine context if registered.
+ */
 val CoroutineContext.datasource: DataSource
     get() = get(CoroutineDatasource)
         ?.datasource
