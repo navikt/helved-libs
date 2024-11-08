@@ -11,6 +11,7 @@ object Tasks {
         status: List<Status>?,
         after: LocalDateTime?,
         kind: List<Kind>?,
+        payload: String?,
         limit: Int? = null,
         offset: Int? = null,
         order: Order? = null,
@@ -20,6 +21,7 @@ object Tasks {
                 it.status = status
                 it.createdAt = after?.let { SelectTime(Operator.GE, after) }
                 it.kind = kind
+                it.payload = payload
             }
     }
 
@@ -27,11 +29,13 @@ object Tasks {
         status: List<Status>?,
         after: LocalDateTime?,
         kind: List<Kind>?,
+        payload: String?,
     ): Int = transaction {
         TaskDao.count {
             it.status = status
             it.createdAt = after?.let { SelectTime(Operator.GE, after) }
             it.kind = kind
+            it.payload = payload
         }
     }
 

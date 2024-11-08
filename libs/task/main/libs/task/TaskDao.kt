@@ -121,7 +121,7 @@ data class TaskDao(
                             val kinds = it.joinToString(", ") { kind -> "'$kind'" }
                             append("kind in ($kinds) AND ")
                         }
-                        conditions.payload?.let { append("payload = ? AND ") }
+                        conditions.payload?.let { append("payload like '%\"?\"%' AND ") }
                         conditions.status?.let {
                             val statuses = it.joinToString(", ") { status -> "'$status'" }
                             append("status IN ($statuses) AND ")
@@ -176,7 +176,7 @@ data class TaskDao(
                             val kinds = it.joinToString(", ") { kind -> "'$kind'" }
                             append("kind in ($kinds) AND ")
                         }
-                        conditions.payload?.let { append("payload = ? AND ") }
+                        conditions.payload?.let { append("payload like '%\"?\"%' AND ") }
                         conditions.status?.let {
                             val statuses = it.joinToString(", ") { status -> "'$status'" }
                             append("status IN ($statuses) AND ")
