@@ -117,7 +117,10 @@ data class TaskDao(
                     if (conditions.any()) {
                         append(" WHERE ")
                         conditions.id?.let { append("id = ? AND ") }
-                        conditions.kind?.let { append("kind = ? AND ") }
+                        conditions.kind?.let {
+                            val kinds = it.joinToString(", ") { kind -> "'$kind'" }
+                            append("kind in ($kinds) AND ")
+                        }
                         conditions.payload?.let { append("payload = ? AND ") }
                         conditions.status?.let {
                             val statuses = it.joinToString(", ") { status -> "'$status'" }
@@ -146,7 +149,6 @@ data class TaskDao(
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 conditions.id?.let { stmt.setObject(position++, it) }
-                conditions.kind?.let { stmt.setString(position++, it.name) }
                 conditions.payload?.let { stmt.setString(position++, it) }
                 conditions.attempt?.let { stmt.setObject(position++, it) }
                 conditions.createdAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
@@ -170,7 +172,10 @@ data class TaskDao(
                     if (conditions.any()) {
                         append(" WHERE ")
                         conditions.id?.let { append("id = ? AND ") }
-                        conditions.kind?.let { append("kind = ? AND ") }
+                        conditions.kind?.let {
+                            val kinds = it.joinToString(", ") { kind -> "'$kind'" }
+                            append("kind in ($kinds) AND ")
+                        }
                         conditions.payload?.let { append("payload = ? AND ") }
                         conditions.status?.let {
                             val statuses = it.joinToString(", ") { status -> "'$status'" }
@@ -194,7 +199,6 @@ data class TaskDao(
                 .prepareStatement(sql)
                 .use { stmt ->
                     conditions.id?.let { stmt.setObject(position++, it) }
-                    conditions.kind?.let { stmt.setString(position++, it.name) }
                     conditions.payload?.let { stmt.setString(position++, it) }
                     conditions.attempt?.let { stmt.setObject(position++, it) }
                     conditions.createdAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
@@ -213,7 +217,7 @@ data class TaskDao(
 
     data class Where(
         var id: UUID? = null,
-        var kind: Kind? = null,
+        var kind: List<Kind>? = null,
         var payload: String? = null,
         var status: List<Status>? = null,
         var attempt: Int? = null,

@@ -10,7 +10,7 @@ object Tasks {
     suspend fun filterBy(
         status: List<Status>?,
         after: LocalDateTime?,
-        kind: Kind?,
+        kind: List<Kind>?,
         limit: Int? = null,
         offset: Int? = null,
         order: Order? = null,
@@ -26,7 +26,7 @@ object Tasks {
     suspend fun count(
         status: List<Status>?,
         after: LocalDateTime?,
-        kind: Kind?,
+        kind: List<Kind>?,
     ): Int = transaction {
         TaskDao.count {
             it.status = status
@@ -40,7 +40,7 @@ object Tasks {
     }
 
     suspend fun forKind(kind: Kind): List<TaskDao> = transaction {
-        TaskDao.select { it.kind = kind }
+        TaskDao.select { it.kind = listOf(kind) }
     }
 
     suspend fun forId(id: UUID): TaskDao? = transaction {
