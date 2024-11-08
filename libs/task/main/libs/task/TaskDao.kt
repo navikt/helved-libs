@@ -121,7 +121,7 @@ data class TaskDao(
                             val kinds = it.joinToString(", ") { kind -> "'$kind'" }
                             append("kind in ($kinds) AND ")
                         }
-                        conditions.payload?.let { append("payload like '%\"?\"%' AND ") }
+                        conditions.payload?.let { append("""payload like ? AND """) }
                         conditions.status?.let {
                             val statuses = it.joinToString(", ") { status -> "'$status'" }
                             append("status IN ($statuses) AND ")
@@ -149,7 +149,7 @@ data class TaskDao(
 
             return coroutineContext.connection.prepareStatement(sql).use { stmt ->
                 conditions.id?.let { stmt.setObject(position++, it) }
-                conditions.payload?.let { stmt.setString(position++, it) }
+                conditions.payload?.let { stmt.setString(position++, "%\"$it\"%") }
                 conditions.attempt?.let { stmt.setObject(position++, it) }
                 conditions.createdAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
                 conditions.updatedAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
@@ -176,7 +176,7 @@ data class TaskDao(
                             val kinds = it.joinToString(", ") { kind -> "'$kind'" }
                             append("kind in ($kinds) AND ")
                         }
-                        conditions.payload?.let { append("payload like '%\"?\"%' AND ") }
+                        conditions.payload?.let { append("""payload like ? AND """) }
                         conditions.status?.let {
                             val statuses = it.joinToString(", ") { status -> "'$status'" }
                             append("status IN ($statuses) AND ")
@@ -199,7 +199,7 @@ data class TaskDao(
                 .prepareStatement(sql)
                 .use { stmt ->
                     conditions.id?.let { stmt.setObject(position++, it) }
-                    conditions.payload?.let { stmt.setString(position++, it) }
+                    conditions.payload?.let { stmt.setString(position++, "%\"$it\"%") }
                     conditions.attempt?.let { stmt.setObject(position++, it) }
                     conditions.createdAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }
                     conditions.updatedAt?.let { stmt.setTimestamp(position++, Timestamp.valueOf(it.time)) }

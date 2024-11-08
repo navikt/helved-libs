@@ -122,15 +122,31 @@ class TaskDaoTest {
         assertEquals(1, actual.attempt)
         assertEquals("Invalid payload", actual.message)
     }
+
+    @Test
+    fun `can select based on payload`() = runTest(H2.context) {
+        val taskId = UUID.randomUUID()
+        transaction {
+            enTask(payload = "{\"sakId\":\"abcd\"}").copy(id = taskId).insert()
+            enTask(payload = "{\"sakId\":\"efgh\"}").insert()
+        }
+
+        val task = transaction {
+            TaskDao.select { it.payload = "abcd" }.single()
+        }
+
+        assertEquals(taskId, task.id)
+    }
 }
 
 internal fun enTask(
     status: Status = Status.IN_PROGRESS,
     createdAt: LocalDateTime = LocalDateTime.now(),
+    payload: String = "{}",
 ) = TaskDao(
     id = UUID.randomUUID(),
     kind = Kind.Iverksetting,
-    payload = "{}",
+    payload = payload,
     status = status,
     attempt = 0,
     createdAt = createdAt,
