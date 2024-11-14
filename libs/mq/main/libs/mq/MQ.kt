@@ -78,8 +78,8 @@ class MQ(private val config: MQConfig) {
         userAuthenticationMQCSP = true
         setIntProperty(JmsConstants.JMS_IBM_ENCODING, CMQC.MQENC_NATIVE)
         setIntProperty(JmsConstants.JMS_IBM_CHARACTER_SET, JmsConstants.CCSID_UTF8)
-        // clientReconnectOptions = WMQConstants.WMQ_CLIENT_RECONNECT // try to reconnect to any queuemanager
-        // clientReconnectTimeout = 600 // reconnection attempts for 10 minutes
+        clientReconnectOptions = WMQConstants.WMQ_CLIENT_RECONNECT_Q_MGR // try to reconnect to the same queuemanager
+        clientReconnectTimeout = 600 // reconnection attempts for 10 minutes
     }
 
     internal val context: JMSContext
