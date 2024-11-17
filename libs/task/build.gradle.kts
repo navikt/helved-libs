@@ -1,5 +1,3 @@
-val ktorVersion = "3.0.0"
-
 dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":libs:jdbc"))
