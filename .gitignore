@@ -22,3 +22,6 @@ src/generated
 # LSP (kotlin-language-server)
 *.db
 kls-classpath
+
+# MQ
+mqjms.log*
