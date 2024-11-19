@@ -54,16 +54,5 @@ subprojects {
             } 
         }
     }
-
-    sourceSets {
-        main {
-            kotlin.srcDir("main")
-            resources.srcDir("main")
-        }
-        test {
-            kotlin.srcDir("test")
-            resources.srcDir("test")
-        }
-    }
 }
 
