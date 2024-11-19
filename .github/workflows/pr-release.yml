@@ -52,7 +52,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           cache-cleanup: always
-          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: paulhatch/semantic-version@v5.4.0
         id: tag
@@ -81,6 +80,6 @@ jobs:
             Changes in this Release
             ${{ steps.notes.outputs.CHANGELOG }}
 
-
       - run: ./gradlew -Pversion=${{ steps.tag.outputs.version}} publish
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
