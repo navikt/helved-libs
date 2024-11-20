@@ -7,5 +7,5 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
     testImplementation(kotlin("test"))
-    testImplementation("org.testcontainers:testcontainers:1.20.3")
+    testImplementation("org.testcontainers:testcontainers:1.20.4")
 }
