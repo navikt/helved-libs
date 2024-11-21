@@ -74,7 +74,12 @@ class Migrator(vararg locations: File) {
 
         // To be migrated
         candidateWithMigration
-            .filterValues { migration -> migration == null || !migration.success }
+            .filterValues { migration -> 
+                when (migration) {
+                    null -> true
+                    else -> !migration.success.also { if (it) jdbcLog.info("Migration [SKIP] ${migration.filename}") }
+                }
+            }
             .mapNotNull { (candidate, migration) ->
                 try {
                     transaction {
@@ -85,11 +90,11 @@ class Migrator(vararg locations: File) {
                             else -> Migration.update(migration.copy(success = true))
                         }
 
-                        jdbcLog.info("Migrated ${candidate.file.name} successfully")
+                        jdbcLog.info("Migration [DONE] ${candidate.file.name}")
                     }
                 } catch (e: Exception) {
-                    jdbcLog.info("Migration of ${candidate.file.name} failed")
-                    secureLog.error("migration of ${candidate.file.name} failed", e)
+                    jdbcLog.info("Migration [FAIL] ${candidate.file.name}")
+                    secureLog.error("Migration [FAIL] ${candidate.file.name}", e)
                 }
             }
     }
