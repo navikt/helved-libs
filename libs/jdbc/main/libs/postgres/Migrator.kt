@@ -19,10 +19,10 @@ import java.time.LocalDateTime
  *
  * @constructor will execute the '/migrations.sql' script on the datasource found on the coroutine context.
  *
- * @property location is the classpath-location of the migration scripts.
+ * @property locations is the classpath-location of the migration scripts.
  */
-class Migrator(location: File) {
-    private var files = location.getSqlFiles()
+class Migrator(vararg locations: File) {
+    private var files = locations.flatMap { it.getSqlFiles() }
     private val jdbcLog = logger("jdbc")
 
     init {

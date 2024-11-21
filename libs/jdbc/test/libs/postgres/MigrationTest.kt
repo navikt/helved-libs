@@ -21,7 +21,7 @@ class MigrationTest {
         runBlocking {
             withContext(ctx) {
                 transaction {
-                    coroutineContext.connection.prepareStatement("DROP TABLE IF EXISTS migrations, test_table, test_table2")
+                    coroutineContext.connection.prepareStatement("DROP TABLE IF EXISTS migrations, test_table, test_table2, test_table3")
                         .execute()
                 }
             }
@@ -60,6 +60,14 @@ class MigrationTest {
     @Test
     fun `can migrate scripts`() = runTest(ctx) {
         Migrator(File("test/migrations/valid")).migrate()
+    }
+
+    @Test
+    fun `can migrate scripts from multiple locations`() = runTest(ctx) {
+        Migrator(
+            File("test/migrations/valid"),
+            File("test/migrations2/"),
+        ).migrate()
     }
 
     @Test
