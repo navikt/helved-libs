@@ -37,7 +37,7 @@ class Migrator(vararg locations: File) {
      * - Will fail if scripts are not versioned in sequence
      * - Will fail if migrated scripts are missing 
      *
-     * @throws libs.postgres.MigrationException on failure. @see libs.postgres.MigrationError 
+     * @throws IllegalStateException on failure.
      */
     suspend fun migrate() {
         val migrations = Migration.all().sortedBy { it.version }
@@ -50,18 +50,19 @@ class Migrator(vararg locations: File) {
         val sequences = candidates.windowed(2, 1) { (a, b) -> isValidSequence(a.migration, b.migration) }
         if (sequences.any { !it }) {
             val order = candidates.map { it.migration.version }.joinToString()
-            throw MigrationException(MigrationError.VERSION_SEQ, "order: $order")
+            error("A version was not incremented by 1: registred order: $order")
         }
 
         // Checksum is not changed
-        val checksums = candidateWithMigration.filterNot { validateChecksum(it.value, it.key) }
-        if (checksums.any()) {
-            throw MigrationException(MigrationError.CHECKSUM)
+        candidateWithMigration.forEach { 
+            validateChecksum(it.value, it.key)
         }
 
         // All applied migrations scripts are found in location
-        if (!migrations.all { migration -> migration.version in candidates.map { it.migration.version } }) {
-            throw MigrationException(MigrationError.MISSING_SCRIPT)
+        migrations.forEach { migration ->
+            if (migration.version !in candidates.map { it.migration.version } ) {
+                error("migration script applied is missing in location: ${migration.filename}")
+            }
         }
 
         // Register new candidates
@@ -93,8 +94,16 @@ class Migrator(vararg locations: File) {
             }
     }
 
-    private fun validateChecksum(migration: Migration?, candidate: MigrationWithFile): Boolean {
-        return migration?.let { migration.checksum == candidate.migration.checksum } ?: true
+    private fun validateChecksum(migration: Migration?, candidate: MigrationWithFile) {
+        migration?.let {
+            if (!migration.success) {
+                return 
+            }
+
+            if (migration.checksum != candidate.migration.checksum) {
+                error("Checksum differs from existing migration: ${candidate.file.name}")
+            }
+        }
     }
 
     private suspend fun migrate(file: File) {
@@ -118,22 +127,9 @@ class Migrator(vararg locations: File) {
         }
 }
 
-enum class MigrationError(val msg: String) {
-    CHECKSUM("Checksum differs from existing migration"),
-    NO_DIR("Specified location is not a directory"),
-    VERSION_SEQ("A version was not incremented by 1"),
-    FILENAME("Version must be included in sql-filename"),
-    MISSING_SCRIPT("migration script applied is missing in location"),
-}
-
 private fun File.getSqlFiles(): List<File> = listFiles()
     ?.let { files -> files.filter { it.extension == "sql" } }
-    ?: throw MigrationException(MigrationError.NO_DIR, absolutePath)
-
-class MigrationException(
-    error: MigrationError,
-    msg: String? = null,
-) : RuntimeException(msg?.let { "${error.msg}: $msg" } ?: error.msg)
+    ?: error("Specified location is not a directory: $absolutePath")
 
 internal data class MigrationWithFile(val migration: Migration, val file: File) {
     companion object {
@@ -207,7 +203,7 @@ private fun version(name: String): Int {
     return DIGIT_PATTERN.findAll(name)
         .map { it.value.toInt() }
         .firstOrNull() // first digit is the version
-        ?: throw MigrationException(MigrationError.FILENAME)
+        ?: error("Version must be included in sql-filename: $name")
 }
 
 private fun checksum(file: File): String {

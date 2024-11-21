@@ -30,11 +30,11 @@ class MigrationTest {
 
     @Test
     fun `location is not a dir`() = runTest {
-        val err = assertThrows<MigrationException> {
+        val err = assertThrows<IllegalStateException> {
             Migrator(File("test/migrations/valid/1.sql"))
         }
 
-        val expected = MigrationError.NO_DIR.msg
+        val expected = "Specified location is not a directory: ${File("test/migrations/valid/1.sql").absolutePath}"
         val actual = requireNotNull(err.message)
 
         assertTrue(
@@ -80,20 +80,20 @@ class MigrationTest {
     @Test
     fun `sequence is corrupted`() = runTest(ctx) {
         val migrator = Migrator(File("test/migrations/wrong_seq"))
-        val err = assertThrows<MigrationException> {
+        val err = assertThrows<IllegalStateException> {
             migrator.migrate()
         }
-        assertEquals("A version was not incremented by 1: order: 1, 3", err.message)
+        assertEquals("A version was not incremented by 1: registred order: 1, 3", err.message)
     }
 
     @Test
     fun `checksum is corrupted`() = runTest(ctx) {
         Migrator(File("test/migrations/valid")).migrate()
 
-        val err = assertThrows<MigrationException> {
+        val err = assertThrows<IllegalStateException> {
             Migrator(File("test/migrations/wrong_checksum")).migrate()
         }
-        assertEquals(MigrationError.CHECKSUM.msg, err.message)
+        assertEquals("Checksum differs from existing migration: 1.sql", err.message)
     }
 
     @Test
