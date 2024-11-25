@@ -266,6 +266,7 @@ enum class Kind {
     Iverksetting,
     SjekkStatus,
     Utbetaling,
+    StatusUtbetaling,
 }
 
 data class Order(
