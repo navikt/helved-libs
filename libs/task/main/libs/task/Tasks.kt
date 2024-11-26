@@ -4,7 +4,7 @@ import libs.postgres.concurrency.transaction
 import java.time.LocalDateTime
 import java.util.*
 
-typealias RetryStrategy = TaskDao.(attemptNumber: Int) -> LocalDateTime
+typealias RetryStrategy = TaskDao.() -> LocalDateTime
 
 object Tasks {
     suspend fun filterBy(
@@ -94,7 +94,7 @@ object Tasks {
         task.copy(
             status = status,
             updatedAt = LocalDateTime.now(),
-            scheduledFor = task.retryStrategy(task.attempt),
+            scheduledFor = task.retryStrategy(),
             attempt = task.attempt + 1,
             message = msg,
         ).update()

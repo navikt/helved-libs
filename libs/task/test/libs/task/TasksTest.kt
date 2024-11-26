@@ -140,7 +140,7 @@ class TasksTest {
             enTask(Status.IN_PROGRESS).apply { insert() }
         }
 
-        val expectedNextAttemptTime = task.oneSec(0)
+        val expectedNextAttemptTime = task.oneSec()
 
         transaction {
             Tasks.update(task.id, Status.IN_PROGRESS, "Oppdrag var stengt. Forsøker igjen...", oneSec)
