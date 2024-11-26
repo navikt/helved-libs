@@ -47,7 +47,7 @@ data class JdbcConfig(
     val password: String = env("DB_PASSWORD"),
     val url: String = "jdbc:postgresql://$host:$port/$database",
     val driver: String = "org.postgresql.Driver",
-    val migrations: File = File("main/migrations")
+    val migrations: List<File> = listOf(File("main/migrations"))
 )
 
 fun <T : Any> ResultSet.map(block: (ResultSet) -> T): List<T> =

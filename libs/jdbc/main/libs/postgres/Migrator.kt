@@ -19,9 +19,11 @@ import java.time.LocalDateTime
  *
  * @constructor will execute the '/migrations.sql' script on the datasource found on the coroutine context.
  *
- * @property locations is the classpath-location of the migration scripts.
+ * @param locations is the classpath-location of the migration scripts.
  */
-class Migrator(vararg locations: File) {
+class Migrator(locations: List<File>) {
+    constructor(location: File) : this(listOf(location))
+
     private var files = locations.flatMap { it.getSqlFiles() }
     private val jdbcLog = logger("jdbc")
 
@@ -35,7 +37,7 @@ class Migrator(vararg locations: File) {
      * - Will skip existing migrations
      * - Will fail if scripts are changed
      * - Will fail if scripts are not versioned in sequence
-     * - Will fail if migrated scripts are missing 
+     * - Will fail if migrated scripts are missing
      *
      * @throws IllegalStateException on failure.
      */
@@ -54,13 +56,13 @@ class Migrator(vararg locations: File) {
         }
 
         // Checksum is not changed
-        candidateWithMigration.forEach { 
+        candidateWithMigration.forEach {
             validateChecksum(it.value, it.key)
         }
 
         // All applied migrations scripts are found in location
         migrations.forEach { migration ->
-            if (migration.version !in candidates.map { it.migration.version } ) {
+            if (migration.version !in candidates.map { it.migration.version }) {
                 error("migration script applied is missing in location: ${migration.filename}")
             }
         }
@@ -74,7 +76,7 @@ class Migrator(vararg locations: File) {
 
         // To be migrated
         candidateWithMigration
-            .filterValues { migration -> 
+            .filterValues { migration ->
                 when (migration) {
                     null -> true
                     else -> !migration.success.also { if (it) jdbcLog.info("Migration [SKIP] ${migration.filename}") }
@@ -102,7 +104,7 @@ class Migrator(vararg locations: File) {
     private fun validateChecksum(migration: Migration?, candidate: MigrationWithFile) {
         migration?.let {
             if (!migration.success) {
-                return 
+                return
             }
 
             if (migration.checksum != candidate.migration.checksum) {

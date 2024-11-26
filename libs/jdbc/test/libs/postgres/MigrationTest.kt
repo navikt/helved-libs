@@ -65,8 +65,10 @@ class MigrationTest {
     @Test
     fun `can migrate scripts from multiple locations`() = runTest(ctx) {
         Migrator(
-            File("test/migrations/valid"),
-            File("test/migrations2/"),
+            listOf(
+                File("test/migrations/valid"),
+                File("test/migrations2/"),
+            )
         ).migrate()
     }
 
