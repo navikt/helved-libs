@@ -1,4 +1,4 @@
-package libs.kafka
+package libs.kafka.vanilla
 
 import libs.utils.env
 import org.apache.kafka.clients.CommonClientConfigs
