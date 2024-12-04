@@ -1,6 +1,6 @@
 package libs.kafka.stream
 
-import libs.kafka.StreamsMock
+import libs.kafka.Mock
 import libs.kafka.Topics
 import libs.kafka.ms
 import libs.kafka.produce
@@ -11,7 +11,7 @@ internal class WindowedStreamTest {
 
     @Test
     fun `reduce with sliding windows`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .slidingWindow(100.ms)
                 .reduce { s, s2 -> "$s$s2" }
@@ -35,7 +35,7 @@ internal class WindowedStreamTest {
 
     @Test
     fun `reduce with hopping windows`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .hoppingWindow(100.ms, advanceSize = 50.ms)
                 .reduce { s, s2 -> "$s$s2" }
@@ -58,7 +58,7 @@ internal class WindowedStreamTest {
 
     @Test
     fun `reduce with tumbling windows`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .tumblingWindow(100.ms)
                 .reduce { s, s2 -> "$s$s2" }
@@ -81,7 +81,7 @@ internal class WindowedStreamTest {
 
     @Test
     fun `reduce with session windows`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .sessionWindow(50.ms)
                 .reduce { s, s2 -> "$s$s2" }

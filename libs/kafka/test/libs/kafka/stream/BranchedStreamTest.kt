@@ -1,6 +1,6 @@
 package libs.kafka.stream
 
-import libs.kafka.StreamsMock
+import libs.kafka.Mock
 import libs.kafka.Tables
 import libs.kafka.Topics
 import libs.kafka.produce
@@ -11,7 +11,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `branch from consumed`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .branch({ v -> v == "lol" }, {
                     produce(Topics.C)
@@ -33,7 +33,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `default branch from consumed`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .branch({ v -> v == "lol" }, {
                     produce(Topics.C)
@@ -55,7 +55,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `branch from mapped`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .map { i -> i }
                 .branch({ v -> v == "lol" }, {
@@ -78,7 +78,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `branch en branched stream from mapped`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .map { i -> i }
                 .branch({ v -> v == "lol" }, {
@@ -103,7 +103,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `default branch stream from mapped`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .map { i -> i }
                 .branch({ v -> v == "lol" }, {
@@ -126,7 +126,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `branch stream from joined stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val tableB = consume(Tables.B)
             consume(Topics.A)
                 .joinWith(tableB)
@@ -158,7 +158,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `default branch from joined stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val tableB = consume(Tables.B)
             consume(Topics.A)
                 .joinWith(tableB)
@@ -185,7 +185,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `branch stream from left joined stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val tableB = consume(Tables.B)
             consume(Topics.A)
                 .leftJoinWith(tableB)
@@ -211,7 +211,7 @@ internal class BranchedStreamTest {
 
     @Test
     fun `default branch from left joined stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val tableB = consume(Tables.B)
             consume(Topics.A)
                 .leftJoinWith(tableB)

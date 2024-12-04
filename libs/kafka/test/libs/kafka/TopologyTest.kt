@@ -2,13 +2,12 @@ package libs.kafka
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
-import libs.kafka.StreamsMock
 
 internal class TopologyTest {
 
     @Test
     fun `consume again`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A).produce(Topics.B)
             consumeForMock(Topics.A).produce(Topics.C)
         }
@@ -28,7 +27,7 @@ internal class TopologyTest {
     fun `consume on each`() {
         val result = mutableListOf<Int>()
 
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A) { _, value, _ ->
                 result.add(value?.length ?: -1)
             }

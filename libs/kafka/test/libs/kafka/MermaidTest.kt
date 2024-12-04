@@ -1,7 +1,6 @@
 package libs.kafka
 
 import libs.kafka.*
-import libs.kafka.StreamsMock
 import libs.kafka.Tables
 import libs.kafka.Topics
 import libs.kafka.produce
@@ -12,7 +11,7 @@ class MermaidTest {
 
     @Test
     fun `join i en stream og initier i en annen`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .joinWith(table)
@@ -35,7 +34,7 @@ class MermaidTest {
 
     @Test
     fun `include custom topic to db`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
             consume(Topics.B)
             consume(Topics.C)
@@ -54,7 +53,7 @@ class MermaidTest {
 
     @Test
     fun `custom state processor`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .processor(CustomProcessorWithTable(table))

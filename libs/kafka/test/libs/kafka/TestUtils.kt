@@ -27,13 +27,13 @@ internal object Tables {
     val B = Table(Topics.B)
 }
 
-internal class StreamsMock : Streams {
+internal class Mock : Streams {
     private lateinit var internalTopology: org.apache.kafka.streams.Topology
     private lateinit var internalStreams: TopologyTestDriver
 
     companion object {
-        internal fun withTopology(topology: Topology.() -> Unit): StreamsMock =
-            StreamsMock().apply {
+        internal fun withTopology(topology: Topology.() -> Unit): Mock =
+            Mock().apply {
                 connect(
                     topology = Topology().apply(topology),
                     config = StreamsConfig("", "", null),

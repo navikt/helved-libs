@@ -1,7 +1,7 @@
 package libs.kafka.stream
 
 import libs.kafka.*
-import libs.kafka.StreamsMock
+import libs.kafka.Mock
 import libs.kafka.Tables
 import libs.kafka.Topics
 import libs.kafka.produce
@@ -12,7 +12,7 @@ import kotlin.test.assertNull
 internal class MappedStreamTest {
     @Test
     fun `map a filtered joined stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .joinWith(table)
@@ -39,7 +39,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `map a filtered left joined stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .leftJoinWith(table)
@@ -65,7 +65,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `map a joined stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .joinWith(table)
@@ -90,7 +90,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `mapNotNull a branched stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .mapNotNull { key, value -> if (key == "1") null else value }
                 .produce(Topics.C)
@@ -109,7 +109,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `map a left joined stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .leftJoinWith(table)
@@ -134,7 +134,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `map key and value`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .leftJoinWith(table)
@@ -159,7 +159,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `map and use custom processor`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .map { v -> v }
                 .processor(CustomProcessor())
@@ -176,7 +176,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `map and use custom processor with table`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .map { v -> v }
@@ -195,7 +195,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `rekey a mapped stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .map { v -> "${v}alue" }
                 .rekey { v -> v }
@@ -212,7 +212,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `filter a filtered mapped stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it.contains("nice") }
                 .filter { it.contains("price") }
@@ -231,7 +231,7 @@ internal class MappedStreamTest {
 
     @Test
     fun `rekey with mapKeyValue`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .mapKeyAndValue { key, value -> KeyValue(key = "test:$key", value = "$value$value") }
                 .produce(Topics.C)

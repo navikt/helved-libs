@@ -1,7 +1,7 @@
 package libs.kafka.stream
 
 import libs.kafka.*
-import libs.kafka.StreamsMock
+import libs.kafka.Mock
 import libs.kafka.Tables
 import libs.kafka.Topics
 import net.logstash.logback.argument.StructuredArguments
@@ -19,7 +19,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `map with metadata`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .mapWithMetadata { value, metadata -> value + metadata.topic }
                 .produce(Topics.B)
@@ -34,7 +34,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `produce to topic`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A).produce(Topics.C)
             consume(Topics.B).produce(Topics.C)
         }
@@ -50,7 +50,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `use costom processor`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .processor(CustomProcessor())
                 .produce(Topics.C)
@@ -65,7 +65,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `use custom processor with table`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .processor(CustomProcessorWithTable(table))
@@ -82,7 +82,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `use custom processor with mapping`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .processor(object : Processor<String, Int>("named") {
                     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): Int {
@@ -102,7 +102,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `use custom processor in place`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .processor(object : Processor<String, String>("something") {
                     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): String {
@@ -121,7 +121,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `secure log`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .secureLog {
                     info("test message $it")
@@ -133,7 +133,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `secure log with structured arguments`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .secureLog {
                     info("test message $it", StructuredArguments.kv("test", "hey"))
@@ -145,7 +145,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `secure log with key`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .secureLogWithKey { key, value ->
                     info("test message $key $value")
@@ -157,7 +157,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `filter on key`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filterKey { it == "3" }
                 .produce(Topics.C)
@@ -174,7 +174,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `flat map and preserve the type`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .flatMapPreserveType { _, value -> listOf(value, value) }
                 .produce(Topics.C)
@@ -190,7 +190,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `flat map key and value and preserve the type`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .flatMapKeyAndValuePreserveType { key, value -> listOf(KeyValue(key, value), KeyValue(value, key)) }
                 .produce(Topics.C)
@@ -206,7 +206,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `flat map`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .flatMap { _, _ -> listOf("a".hashCode(), "b".hashCode()) }
                 .map { value -> value.toString() }
@@ -223,7 +223,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `flat map to key and value`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .flatMapKeyAndValue { key, value ->
                     val hashKey = key.hashCode().toString()
@@ -248,7 +248,7 @@ internal class ConsumedStreamTest {
     @Test
     fun repartition() {
         val msg = assertThrows<TopologyException> {
-            StreamsMock.withTopology {
+            Mock.withTopology {
                 val ktable = consumeRepartitioned(Tables.B, 3)
 
                 consume(Topics.A)
@@ -266,7 +266,7 @@ internal class ConsumedStreamTest {
     fun `for each`() {
         val result = mutableMapOf<String, String>()
 
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A).forEach { key, value -> result[key] = value }
         }
 
@@ -277,7 +277,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `filter consumed topic`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it != "b" }
                 .produce(Topics.C)
@@ -296,7 +296,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `rekey consumed topic`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .rekey { "test:$it" }
                 .produce(Topics.C)
@@ -315,7 +315,7 @@ internal class ConsumedStreamTest {
 
     @Test
     fun `filter a filtered  stream`() {
-        val kafka = StreamsMock.withTopology {
+        val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it.contains("nice") }
                 .filter { it.contains("price") }
