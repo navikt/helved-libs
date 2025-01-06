@@ -19,7 +19,8 @@ object HttpClientFactory {
     fun new(
         logLevel: LogLevel = LogLevel.INFO,
         retries: Int? = 3,
-        requestTimeoutMs: Long? = 30_000,
+        requestTimeoutMs: Long? = 60_000,
+        connectionTimeoutMs: Long? = 30_000,
         json: (ObjectMapper.() -> Unit)? = {
             registerModule(JavaTimeModule())
             disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -50,7 +51,7 @@ object HttpClientFactory {
             requestTimeoutMs?.let {
                 install(HttpTimeout) {
                     requestTimeoutMillis = requestTimeoutMs
-                    connectTimeoutMillis = 5_000
+                    connectTimeoutMillis = connectionTimeoutMs
                 }
             }
         }
