@@ -194,10 +194,11 @@ internal data class Migration(
 
         suspend fun update(migration: Migration) = transaction {
             coroutineContext.connection
-                .prepareStatement("UPDATE migrations SET success = ? WHERE version = ?")
+                .prepareStatement("UPDATE migrations SET success = ?, checksum = ? WHERE version = ?")
                 .use { stmt ->
                     stmt.setBoolean(1, migration.success)
-                    stmt.setInt(2, migration.version)
+                    stmt.setString(2, migration.checksum)
+                    stmt.setInt(3, migration.version)
                     secureLog.debug(stmt.toString())
                     stmt.executeUpdate()
                 }
