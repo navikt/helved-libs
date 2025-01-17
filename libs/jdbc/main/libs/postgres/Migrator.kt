@@ -89,7 +89,7 @@ class Migrator(locations: List<File>) {
 
                         when (migration) {
                             null -> Migration.update(candidate.migration.copy(success = true))
-                            else -> Migration.update(migration.copy(success = true))
+                            else -> Migration.update(migration.copy(success = true, checksum = candidate.migration.checksum))
                         }
 
                         jdbcLog.info("Migration [DONE] ${candidate.file.name}")
