@@ -108,6 +108,7 @@ class Migrator(locations: List<File>) {
             }
 
             if (migration.checksum != candidate.migration.checksum) {
+                jdbcLog.info("${candidate.file.name}, checksum: ${candidate.migration.checksum} != previously migrated ${migration.checksum}")
                 error("Checksum differs from existing migration: ${candidate.file.name}")
             }
         }
