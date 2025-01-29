@@ -1,5 +1,6 @@
 dependencies {
     api(project(":libs:utils"))
+    api(project(":libs:tracing"))
     api(project(":libs:xml"))
 
     api("com.ibm.mq:com.ibm.mq.allclient:9.4.1.0")

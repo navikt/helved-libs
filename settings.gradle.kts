@@ -14,6 +14,7 @@ include(
     "libs:mq-test",
     "libs:ktor",
     "libs:task",
+    "libs:tracing",
     "libs:utils",
     "libs:ws",
     "libs:xml",

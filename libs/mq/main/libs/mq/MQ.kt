@@ -5,6 +5,7 @@ import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
+import libs.tracing.*
 import libs.utils.logger
 import libs.utils.secureLog
 import java.util.*
@@ -27,6 +28,8 @@ class MQProducer(
         mq.transaction { ctx ->
             ctx.clientID = UUID.randomUUID().toString()
             val producer = ctx.createProducer().apply(config)
+            val message = ctx.createTextMessage(message)
+            getTraceparent()?.let { message.setJMSCorrelationID(it) }
             producer.send(queue, message)
         }
     }
@@ -48,7 +51,17 @@ abstract class MQConsumer(
         messageListener = MessageListener {
             mqLog.info("Consuming message on ${queue.baseQueueName}")
             mq.transacted(context) {
-                onMessage(it as TextMessage)
+                val span = it.getJMSCorrelationID()?.let { id ->
+                    val parentCtx = propagateSpan(id)
+                    tracer.spanBuilder(queue.baseQueueName)
+                        .setParent(parentCtx)
+                        .startSpan()
+                }
+                try {
+                    onMessage(it as TextMessage)
+                } finally {
+                    span?.end()
+                }
             }
         }
     }
