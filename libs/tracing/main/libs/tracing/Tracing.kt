@@ -4,10 +4,6 @@ import libs.utils.*
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.*
 import io.opentelemetry.context.*
-import io.opentelemetry.sdk.OpenTelemetrySdk
-import io.opentelemetry.sdk.trace.SdkTracerProvider
-import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
 
 private val log = logger("libs.tracing")
 
@@ -59,19 +55,5 @@ fun propagateSpan(traceparent: String): Context {
     val traceState = TraceState.getDefault()
     val spanCtx = SpanContext.createFromRemoteParent(traceId, parentSpanId, traceFlags, traceState)
     return Context.current().with(Span.wrap(spanCtx))
-}
-
-fun setup(url: String = env("OTEL_EXPORTER_OTLP_ENDPOINT")) {
-    val exporter = OtlpGrpcSpanExporter.builder()
-        .setEndpoint(url)
-        .build()
-
-    val provider = SdkTracerProvider.builder()
-        .addSpanProcessor(SimpleSpanProcessor.create(exporter))
-        .build()
-
-    OpenTelemetrySdk.builder()
-        .setTracerProvider(provider)
-        .buildAndRegisterGlobal()
 }
 
