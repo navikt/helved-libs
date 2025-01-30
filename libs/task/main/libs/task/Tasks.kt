@@ -83,6 +83,25 @@ object Tasks {
             ).insert()
         }
 
+    suspend fun stop(id: UUID) =
+        transaction {
+            val task = TaskDao.select { it.id = id }.single()
+            task
+                .copy(
+                    updatedAt = LocalDateTime.now(),
+                    status = Status.COMPLETE,
+                    message = "manually stopped",
+                ).update()
+            TaskHistoryDao(
+                taskId = task.id,
+                createdAt = task.createdAt,
+                triggeredAt = task.updatedAt,
+                triggeredBy = task.updatedAt,
+                status = task.status,
+                message = task.message,
+            ).insert()
+        }
+
     suspend fun update(
         id: UUID,
         status: Status,
