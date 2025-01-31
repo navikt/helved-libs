@@ -31,8 +31,7 @@ class MQProducer(
             val message = ctx.createTextMessage(message)
             getTraceparent()?.let { 
                 mqLog.info("generated traceparent: $it")
-                message.setJMSMessageID(it)
-                // message.setStringProperty("traceparent", it)
+                message.setStringProperty("traceparent", it)
             }
             producer.send(queue, message)
         }
@@ -55,8 +54,9 @@ abstract class MQConsumer(
         messageListener = MessageListener {
             mqLog.info("Consuming message on ${queue.baseQueueName}")
             mq.transacted(context) {
-                // val span = it.getStringProperty("traceparent")?.let { id ->
-                val span = it.getJMSCorrelationID()?.let { id ->
+                val traceparent = it.getStringProperty("traceparent") 
+                mqLog.info("received traceparent: $traceparent")
+                val span = traceparent?.let { id ->
                     val parentCtx = propagateSpan(id)
                     tracer.spanBuilder(queue.baseQueueName)
                         .setParent(parentCtx)
