@@ -34,6 +34,7 @@ class MQProducer(
                 message.setStringProperty("traceparent", it)
             }
             producer.send(queue, message)
+            mqLog.info("sent with message.id: ${message.jmsMessageID}")
         }
     }
 }
@@ -62,6 +63,7 @@ abstract class MQConsumer(
                         .setParent(parentCtx)
                         .startSpan()
                 }
+                mqLog.info("received message.correlationID: ${it.jmsCorrelationID}")
                 try {
                     onMessage(it as TextMessage)
                 } finally {
