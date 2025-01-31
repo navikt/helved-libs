@@ -30,6 +30,7 @@ class MQProducer(
             val producer = ctx.createProducer().apply(config)
             val message = ctx.createTextMessage(message)
             getTraceparent()?.let { 
+                mqLog.info("generated traceparent: $it")
                 message.setJMSMessageID(it)
                 // message.setStringProperty("traceparent", it)
             }
