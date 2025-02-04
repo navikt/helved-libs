@@ -9,10 +9,14 @@ import libs.tracing.*
 import libs.utils.logger
 import libs.utils.secureLog
 import java.util.*
+import java.time.LocalDateTime
 import javax.jms.JMSContext
 import javax.jms.JMSProducer
 import javax.jms.MessageListener
 import javax.jms.TextMessage
+import javax.jms.ExceptionListener
+import javax.jms.JMSException
+import javax.jms.JMSConsumer
 
 private val mqLog = logger("mq")
 
@@ -46,30 +50,63 @@ internal interface MQListener {
 abstract class MQConsumer(
     private val mq: MQ,
     private val queue: MQQueue,
-) : AutoCloseable, MQListener {
-    private val context = mq.context.apply {
-        autoStart = false
+) : AutoCloseable, MQListener, ExceptionListener {
+    private var context = createContext()
+    private var consumer = createConsumer()
+
+    private fun createContext(): JMSContext {
+        return mq.context.apply {
+            autoStart = false
+            exceptionListener = this@MQConsumer
+        }
     }
 
-    private val consumer = context.createConsumer(queue).apply {
-        messageListener = MessageListener {
-            mqLog.info("Consuming message on ${queue.baseQueueName}")
-            mq.transacted(context) {
-                val traceparent = it.getStringProperty("traceparent") 
-                mqLog.info("received traceparent: $traceparent")
-                val span = traceparent?.let { id ->
-                    val parentCtx = propagateSpan(id)
-                    tracer.spanBuilder(queue.baseQueueName)
-                        .setParent(parentCtx)
-                        .startSpan()
-                }
-                mqLog.info("received message.correlationID: ${it.jmsCorrelationID}")
-                try {
-                    onMessage(it as TextMessage)
-                } finally {
-                    span?.end()
+    private fun createConsumer(): JMSConsumer {
+        return context.createConsumer(queue).apply {
+            messageListener = MessageListener {
+                mqLog.info("Consuming message on ${queue.baseQueueName}")
+                mq.transacted(context) {
+                    val traceparent = it.getStringProperty("traceparent") 
+                    mqLog.info("received traceparent: $traceparent")
+                    val span = traceparent?.let { id ->
+                        val parentCtx = propagateSpan(id)
+                        tracer.spanBuilder(queue.baseQueueName)
+                            .setParent(parentCtx)
+                            .startSpan()
+                    }
+                    mqLog.info("received message.correlationID: ${it.jmsCorrelationID}")
+                    try {
+                        onMessage(it as TextMessage)
+                    } finally {
+                        span?.end()
+                    }
                 }
             }
+        }
+    }
+
+    override fun onException(exception: JMSException) {
+        mqLog.error("Connection exception occured. Reconnecting ${queue.baseQueueName}...", exception)
+        reconnect()
+    }
+
+    private var lastReconnect = LocalDateTime.now()
+
+    @Synchronized
+    fun reconnect() {
+        if (lastReconnect.plusMinutes(1).isAfter(LocalDateTime.now())) return;
+        try {
+            runCatching { 
+                close() // we dont care if this fails (maybe already closed)
+            }
+            context = createContext() 
+            consumer = createConsumer()
+            start()
+            mqLog.info("Sucessfully reconnected consumer ${queue.baseQueueName}")
+        } catch(e: Exception) {
+            mqLog.error("Failed to reconnect", e)
+        } finally {
+            lastReconnect = LocalDateTime.now()
         }
     }
 
