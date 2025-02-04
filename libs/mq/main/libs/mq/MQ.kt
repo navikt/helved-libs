@@ -20,6 +20,8 @@ import javax.jms.JMSConsumer
 
 private val mqLog = logger("mq")
 
+private val traceparents = mutableMapOf<String, String>()
+
 class MQProducer(
     private val mq: MQ,
     private val queue: MQQueue,
@@ -29,16 +31,15 @@ class MQProducer(
         config: JMSProducer.() -> Unit = {},
     ) {
         mqLog.info("Producing message on ${queue.baseQueueName}")
-        mq.transaction { ctx ->
+        return mq.transaction { ctx ->
             ctx.clientID = UUID.randomUUID().toString()
             val producer = ctx.createProducer().apply(config)
             val message = ctx.createTextMessage(message)
-            getTraceparent()?.let { 
-                mqLog.info("generated traceparent: $it")
-                message.setStringProperty("traceparent", it)
-            }
             producer.send(queue, message)
-            mqLog.info("sent with message.id: ${message.jmsMessageID}")
+
+            getTraceparent()?.let { traceparent ->
+                traceparents[message.jmsMessageID] = traceparent
+            }
         }
     }
 }
@@ -66,15 +67,11 @@ abstract class MQConsumer(
             messageListener = MessageListener {
                 mqLog.info("Consuming message on ${queue.baseQueueName}")
                 mq.transacted(context) {
-                    val traceparent = it.getStringProperty("traceparent") 
-                    mqLog.info("received traceparent: $traceparent")
-                    val span = traceparent?.let { id ->
-                        val parentCtx = propagateSpan(id)
+                    val span = traceparents.get(it.jmsCorrelationID)?.let { traceparent ->
                         tracer.spanBuilder(queue.baseQueueName)
-                            .setParent(parentCtx)
+                            .setParent(propagateSpan(traceparent))
                             .startSpan()
                     }
-                    mqLog.info("received message.correlationID: ${it.jmsCorrelationID}")
                     try {
                         onMessage(it as TextMessage)
                     } finally {
