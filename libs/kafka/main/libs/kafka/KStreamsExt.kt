@@ -110,3 +110,4 @@ internal fun <V> KStream<String, V>.skipTombstone(
     val filteredInternalStream = filter({ _, value -> value != null }, named)
     return filteredInternalStream as KStream<String, V & Any>
 }
+
