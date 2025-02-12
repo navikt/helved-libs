@@ -45,7 +45,8 @@ class XMLMapper<T : Any>(private val type: KClass<T>) {
         return outStream.toByteArray()
     }
 
-    fun readValue(value: ByteArray): T {
+    fun readValue(value: ByteArray?): T? {
+        if (value == null) return null
         val reader = inputFactory.createXMLStreamReader(StreamSource(ByteArrayInputStream(value)))
         val jaxb = unmarshaller.unmarshal(reader, type.java)
         reader.close()

@@ -1,15 +1,16 @@
 package libs.kafka
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import kotlin.reflect.KClass
+import libs.xml.*
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.serialization.Serializer
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import kotlin.reflect.KClass
 
 interface StreamSerde<T> : Serde<T>
 
@@ -50,6 +51,30 @@ class JacksonDeserializer<T : Any>(private val kclass: KClass<T>) : Deserializer
     override fun deserialize(topic: String, data: ByteArray?): T? {
         return data?.let {
             JsonSerde.jackson.readValue(data, kclass.java)
+        }
+    }
+}
+
+object XmlSerde {
+    inline fun <reified V : Any> serde(): StreamSerde<V> = object : StreamSerde<V> {
+        private val mapper: XMLMapper<V> = XMLMapper()
+        override fun serializer(): Serializer<V> = XmlSerializer(mapper)
+        override fun deserializer(): Deserializer<V> = XmlDeserializer(mapper)
+    }
+}
+
+class XmlSerializer<T : Any>(private val mapper: XMLMapper<T>) : Serializer<T> {
+    override fun serialize(topic: String, data: T?): ByteArray? {
+        return data?.let {
+            mapper.writeValueAsBytes(data)
+        }
+    }
+}
+
+class XmlDeserializer<T : Any>(private val mapper: XMLMapper<T>) : Deserializer<T> {
+    override fun deserialize(topic: String, data: ByteArray?): T? {
+        return data?.let {
+            mapper.readValue(data)
         }
     }
 }

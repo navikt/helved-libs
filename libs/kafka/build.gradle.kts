@@ -2,6 +2,7 @@ val ktorVersion = "3.0.2"
 
 dependencies {
     implementation(project(":libs:utils"))
+    implementation(project(":libs:xml"))
 
     implementation("io.micrometer:micrometer-registry-prometheus:1.14.4")
     implementation("org.apache.kafka:kafka-streams:3.9.0")
