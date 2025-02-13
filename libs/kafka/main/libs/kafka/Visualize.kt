@@ -144,9 +144,10 @@ internal object PlantUML {
 class Mermaid(
     private val topology: Topology,
 ) {
-    fun generateDiagram(direction: Direction = Direction.LR): String =
+    fun generateDiagram(direction: Direction = Direction.LR, disableJobs: Boolean = false): String =
         createContent(topology)
             .reduce { acc, mermaidContent -> acc.accumulate(mermaidContent) }
+            .also { if(disableJobs) it.disableJobs() }
             .diagram(direction)
 
     fun generateSubDiagrams(direction: Direction = Direction.LR): List<String> =
@@ -172,8 +173,13 @@ class Mermaid(
         private var toTableStreams: List<String> = emptyList(),
         private var repartitionStreams: List<String> = emptyList(),
         private var topics: Set<String> = emptySet(),
-        private var branches: List<String> = emptyList(),
+        private var branches: Set<String> = emptySet(),
     ) {
+        fun disableJobs() {
+            this.jobs = emptyList()
+            this.jobStreams = emptyList()
+        }
+
         fun accumulate(other: MermaidContent): MermaidContent {
             this.sourcesToSinks += other.sourcesToSinks
             this.joins += other.joins
@@ -186,7 +192,7 @@ class Mermaid(
             this.toTableStreams += other.toTableStreams
             this.repartitionStreams += other.repartitionStreams
             this.topics = topics union other.topics
-            this.branches += other.branches
+            this.branches union other.branches
             return this
         }
 
@@ -292,7 +298,7 @@ class Mermaid(
         branchedProcessors: List<Processor>,
         joins: List<Processor>,
         customStateProcessors: List<Processor>
-    ): List<String> = branchedProcessors
+    ): Set<String> = branchedProcessors
         .filterNot { it.isTraversingAny(joins + customStateProcessors) }
         .flatMap { processor ->
             findSources(processor).flatMap { source ->
@@ -302,7 +308,7 @@ class Mermaid(
                         .map { sinkTopic -> path(sourceTopic, sinkTopic) }
                 }
             }
-        }
+        }.toSet()
 
     private fun repartitionStreams(sources: List<Source>, sinks: List<Sink>): List<String> {
         val repartitionTopicNames = sinks
