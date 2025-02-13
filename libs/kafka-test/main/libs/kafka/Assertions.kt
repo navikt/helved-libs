@@ -24,6 +24,11 @@ class TopicAssertion<V : Any> private constructor(topic: TestOutputTopic<String,
         assertEquals(value(), actual)
     }
 
+    fun hasLastValue(key: String, value: V.() -> Unit) = this.also {
+        val last = valuesForKey(key).last()
+        value(last)
+    }
+
     fun hasNumberOfRecords(amount: Int) = this.also {
         assertEquals(amount, actuals.size)
     }
