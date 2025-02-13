@@ -31,7 +31,7 @@ internal class RestoreListener : StateRestoreListener {
         val duration = (System.currentTimeMillis() - startMs).toDuration(DurationUnit.MILLISECONDS)
 
         log.info(
-            "Gjennopprettet #$totalRestored meldinger på partisjon ${partition.partition()} på $duration",
+            "Recovered #$totalRestored records on partition ${partition.partition()} ($duration)",
             StructuredArguments.kv("partition", partition.partition()),
             StructuredArguments.kv("topic", partition.topic()),
             StructuredArguments.kv("store", storeName),
