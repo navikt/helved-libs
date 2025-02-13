@@ -39,6 +39,13 @@ internal fun <L : Any, R : Any, LR> KStream<String, L>.leftJoin(
     return leftJoin(ktable, joiner, joined)
 }
 
+internal fun <L : Any, R : Any, LR> KTable<L>.leftJoin(
+    right: KTable<R>,
+    joiner: (L?, R?) -> LR,
+): KStream<String, LR> {
+    return internalKTable.leftJoin(right.internalKTable, joiner).toStream()
+}
+
 internal fun <L : Any, R : Any, LR> KStream<String, L>.join(
     left: Topic<L>,
     right: KTable<R>,
