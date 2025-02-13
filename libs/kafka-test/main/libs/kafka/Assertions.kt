@@ -55,7 +55,7 @@ class TopicAssertion<V : Any> private constructor(topic: TestOutputTopic<String,
         assertions(value)
     }
 
-    fun hasLastValueMatching(assertions: (value: V?) -> Unit) = this.also {
+    fun withLastValue(assertions: (value: V?) -> Unit) = this.also {
         val value = actuals.last().value ?: fail("No records found.")
         assertions(value)
     }
