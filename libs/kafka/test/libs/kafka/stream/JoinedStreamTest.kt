@@ -227,4 +227,23 @@ internal class JoinedStreamTest {
         assertNull(result["1"])
         assertEquals("niceprice", result["2"])
     }
+
+    @Test
+    fun `rekey a joined stream`() {
+        val kafka = Mock.withTopology {
+            val table = consume(Tables.B)
+            consume(Topics.A)
+                .joinWith(table)
+                .rekey { a, b -> b + a }
+                .map { a, _ -> a }
+                .produce(Topics.C)
+        }
+
+        kafka.inputTopic(Topics.B).produce("1", "awesome")
+        kafka.inputTopic(Topics.A).produce("1", "sauce")
+
+        val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
+        assertEquals(1, result.size)
+        assertEquals("sauce", result["awesomesauce"])
+    }
 }

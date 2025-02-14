@@ -29,6 +29,11 @@ class JoinedStream<L : Any, R> internal constructor(
         return MappedStream(sourceTopicName, mappedStream, namedSupplier)
     }
 
+    fun rekey(mapper: (L, R) -> String): JoinedStream<L, R> {
+        val rekeyedStream = stream.selectKey { _, (left, right) -> mapper(left, right) }
+        return JoinedStream(sourceTopicName, rekeyedStream, namedSupplier)
+    }
+
     fun <LR : Any> mapKeyValue(mapper: (String, L, R) -> KeyValue<String, LR>): MappedStream<LR> {
         val mappedStream = stream.map { key, (left, right) -> mapper(key, left, right).toInternalKeyValue() }
         return MappedStream(sourceTopicName, mappedStream, namedSupplier)
