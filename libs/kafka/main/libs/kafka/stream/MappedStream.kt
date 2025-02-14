@@ -1,17 +1,15 @@
 package libs.kafka.stream
 
-import libs.kafka.Log
-import libs.kafka.Topic
+import libs.kafka.*
 import libs.kafka.processor.Processor
 import libs.kafka.processor.Processor.Companion.addProcessor
 import libs.kafka.processor.StateProcessor
 import libs.kafka.processor.StateProcessor.Companion.addProcessor
-import libs.kafka.produceWithLogging
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Named
 
-class MappedStream<T : Any> internal constructor(
-    private val sourceTopicName: String,
+class MappedStream<S: Any, T : Any> internal constructor(
+    private val topic: Topic<S>,
     private val stream: KStream<String, T>,
     private val namedSupplier: () -> String,
 ) {
@@ -20,55 +18,61 @@ class MappedStream<T : Any> internal constructor(
         stream.produceWithLogging(topic, named)
     }
 
-    fun <R : Any> map(mapper: (T) -> R): MappedStream<R> {
+    fun <R : Any> map(mapper: (T) -> R): MappedStream<S, R> {
         val mappedStream = stream.mapValues { lr -> mapper(lr) }
-        return MappedStream(sourceTopicName, mappedStream, namedSupplier)
+        return MappedStream(topic, mappedStream, namedSupplier)
     }
 
-    fun <R : Any> map(mapper: (key: String, value: T) -> R): MappedStream<R> {
+    fun <R : Any> map(mapper: (key: String, value: T) -> R): MappedStream<S, R> {
         val mappedStream = stream.mapValues { key, value -> mapper(key, value) }
-        return MappedStream(sourceTopicName, mappedStream, namedSupplier)
+        return MappedStream(topic, mappedStream, namedSupplier)
     }
 
-    fun <R : Any> flatMap(mapper: (value: T) -> Iterable<R>): MappedStream<R> {
+    fun <U : Any> leftJoinWith(ktable: KTable<U>, serde: () -> StreamSerde<T>): JoinedStream<S, T, U?> {
+        val joinedStream = stream.leftJoin(topic, serde(), ktable, ::StreamsPair)
+        val named = { "${topic.name}-left-join-${ktable.table.sourceTopic.name}" }
+        return JoinedStream(topic, joinedStream, named)
+    }
+
+    fun <R : Any> flatMap(mapper: (value: T) -> Iterable<R>): MappedStream<S, R> {
         val flattenedStream = stream.flatMapValues { _, value -> mapper(value) }
-        return MappedStream(sourceTopicName, flattenedStream, namedSupplier)
+        return MappedStream(topic, flattenedStream, namedSupplier)
     }
 
-    fun rekey(mapper: (value: T) -> String): MappedStream<T> {
+    fun rekey(mapper: (value: T) -> String): MappedStream<S, T> {
         val rekeyedStream = stream.selectKey { _, value -> mapper(value) }
-        return MappedStream(sourceTopicName, rekeyedStream, namedSupplier)
+        return MappedStream(topic, rekeyedStream, namedSupplier)
     }
 
-    fun filter(lambda: (T) -> Boolean): MappedStream<T> {
+    fun filter(lambda: (T) -> Boolean): MappedStream<S, T> {
         val filteredStream = stream.filter { _, value -> lambda(value) }
-        return MappedStream(sourceTopicName, filteredStream, namedSupplier)
+        return MappedStream(topic, filteredStream, namedSupplier)
     }
 
-    fun branch(predicate: (T) -> Boolean, consumed: MappedStream<T>.() -> Unit): BranchedMappedKStream<T> {
+    fun branch(predicate: (T) -> Boolean, consumed: MappedStream<S, T>.() -> Unit): BranchedMappedKStream<S, T> {
         val named = Named.`as`("split-${namedSupplier()}")
         val branchedStream = stream.split(named)
-        return BranchedMappedKStream(sourceTopicName, branchedStream, namedSupplier).branch(predicate, consumed)
+        return BranchedMappedKStream(topic, branchedStream, namedSupplier).branch(predicate, consumed)
     }
 
-    fun secureLog(logger: Log.(value: T) -> Unit): MappedStream<T> {
+    fun secureLog(logger: Log.(value: T) -> Unit): MappedStream<S, T> {
         val loggedStream = stream.peek { _, value -> logger.invoke(Log.secure, value) }
-        return MappedStream(sourceTopicName, loggedStream, namedSupplier)
+        return MappedStream(topic, loggedStream, namedSupplier)
     }
 
-    fun secureLogWithKey(log: Log.(key: String, value: T) -> Unit): MappedStream<T> {
+    fun secureLogWithKey(log: Log.(key: String, value: T) -> Unit): MappedStream<S, T> {
         val loggedStream = stream.peek { key, value -> log.invoke(Log.secure, key, value) }
-        return MappedStream(sourceTopicName, loggedStream, namedSupplier)
+        return MappedStream(topic, loggedStream, namedSupplier)
     }
 
-    fun <U : Any> processor(processor: Processor<T, U>): MappedStream<U> {
+    fun <U : Any> processor(processor: Processor<T, U>): MappedStream<S, U> {
         val processedStream = stream.addProcessor(processor)
-        return MappedStream(sourceTopicName, processedStream, namedSupplier)
+        return MappedStream(topic, processedStream, namedSupplier)
     }
 
-    fun <TABLE : Any, U : Any> processor(processor: StateProcessor<TABLE, T, U>): MappedStream<U> {
+    fun <TABLE : Any, U : Any> processor(processor: StateProcessor<TABLE, T, U>): MappedStream<S, U> {
         val processedStream = stream.addProcessor(processor)
-        return MappedStream(sourceTopicName, processedStream, namedSupplier)
+        return MappedStream(topic, processedStream, namedSupplier)
     }
 
     fun forEach(mapper: (key: String, value: T) -> Unit) {

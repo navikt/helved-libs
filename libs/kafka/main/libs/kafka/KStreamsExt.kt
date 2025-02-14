@@ -8,6 +8,7 @@ import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Materialized
 import org.apache.kafka.streams.kstream.Named
 import org.apache.kafka.streams.kstream.Repartitioned
+import org.apache.kafka.streams.kstream.Joined
 import org.apache.kafka.streams.state.KeyValueStore
 
 internal fun <T : Any> KStream<String, T>.produceWithLogging(
@@ -27,6 +28,19 @@ internal fun <L : Any, R : Any, LR> KStream<String, L>.leftJoin(
     val ktable = right.internalKTable
     val joined = left leftJoin right
     return leftJoin(ktable, joiner, joined)
+}
+
+internal fun <S: Any, L : Any, R : Any, LR> KStream<String, L>.leftJoin(
+    topic: Topic<S>,
+    valueSerde: StreamSerde<L>,
+    right: KTable<R>,
+    joiner: (L, R?) -> LR,
+): KStream<String, LR> {
+    val keySerde = right.table.sourceTopic.keySerde
+    val rightValueSerde = right.table.sourceTopic.valueSerde
+    val named = "${topic.name}-left-join-${right.table.sourceTopic.name}"
+    val joined = Joined.with(keySerde, valueSerde, rightValueSerde, named)
+    return leftJoin(right.internalKTable, joiner, joined)
 }
 
 internal fun <L : Any, R : Any, LR> KStream<String, L>.leftJoin(

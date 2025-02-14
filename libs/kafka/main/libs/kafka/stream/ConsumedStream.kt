@@ -39,26 +39,26 @@ class ConsumedStream<T : Any> internal constructor(
         return ConsumedStream(topic, filteredStream, namedSupplier)
     }
 
-    fun <R : Any> map(mapper: (value: T) -> R): MappedStream<R> {
+    fun <R : Any> map(mapper: (value: T) -> R): MappedStream<T, R> {
         val mappedStream = stream.mapValues { value -> mapper(value) }
-        return MappedStream(topic.name, mappedStream, namedSupplier)
+        return MappedStream(topic, mappedStream, namedSupplier)
     }
 
-    fun <R : Any> map(mapper: (key: String, value: T) -> R): MappedStream<R> {
+    fun <R : Any> map(mapper: (key: String, value: T) -> R): MappedStream<T, R> {
         val mappedStream = stream.mapValues { key, value -> mapper(key, value) }
-        return MappedStream(topic.name, mappedStream, namedSupplier)
+        return MappedStream(topic, mappedStream, namedSupplier)
     }
 
-    fun <R : Any> mapWithMetadata(mapper: (value: T, metadata: ProcessorMetadata) -> R): MappedStream<R> {
+    fun <R : Any> mapWithMetadata(mapper: (value: T, metadata: ProcessorMetadata) -> R): MappedStream<T, R> {
         val mappedStream = stream
             .addProcessor(MetadataProcessor(topic))
             .mapValues { (kv, metadata) -> mapper(kv.value, metadata) }
-        return MappedStream(topic.name, mappedStream, namedSupplier)
+        return MappedStream(topic, mappedStream, namedSupplier)
     }
 
-    fun <R> mapNotNull(mapper: (key: String, value: T) -> R): MappedStream<R & Any> {
+    fun <R> mapNotNull(mapper: (key: String, value: T) -> R): MappedStream<T, R & Any> {
         val valuedStream = stream.mapValues { key, value -> mapper(key, value) }.filterNotNull()
-        return MappedStream(topic.name, valuedStream, namedSupplier)
+        return MappedStream(topic, valuedStream, namedSupplier)
     }
 
     fun flatMapPreserveType(mapper: (key: String, value: T) -> Iterable<T>): ConsumedStream<T> {
@@ -71,19 +71,19 @@ class ConsumedStream<T : Any> internal constructor(
         return ConsumedStream(topic, fusedStream, namedSupplier)
     }
 
-    fun <R : Any> flatMap(mapper: (key: String, value: T) -> Iterable<R>): MappedStream<R> {
+    fun <R : Any> flatMap(mapper: (key: String, value: T) -> Iterable<R>): MappedStream<T, R> {
         val fusedStream = stream.flatMapValues { key, value -> mapper(key, value) }
-        return MappedStream(topic.name, fusedStream, namedSupplier)
+        return MappedStream(topic, fusedStream, namedSupplier)
     }
 
-    fun <R : Any> flatMapKeyAndValue(mapper: (key: String, value: T) -> Iterable<KeyValue<String, R>>): MappedStream<R> {
+    fun <R : Any> flatMapKeyAndValue(mapper: (key: String, value: T) -> Iterable<KeyValue<String, R>>): MappedStream<T, R> {
         val fusedStream = stream.flatMap { key, value -> mapper(key, value).map { it.toInternalKeyValue() } }
-        return MappedStream(topic.name, fusedStream, namedSupplier)
+        return MappedStream(topic, fusedStream, namedSupplier)
     }
 
-    fun <R : Any> mapKeyAndValue(mapper: (key: String, value: T) -> KeyValue<String, R>): MappedStream<R> {
+    fun <R : Any> mapKeyAndValue(mapper: (key: String, value: T) -> KeyValue<String, R>): MappedStream<T, R> {
         val fusedStream = stream.map { key, value -> mapper(key, value).toInternalKeyValue() }
-        return MappedStream(topic.name, fusedStream, namedSupplier)
+        return MappedStream(topic, fusedStream, namedSupplier)
     }
 
     /**
@@ -150,16 +150,16 @@ class ConsumedStream<T : Any> internal constructor(
         return SessionWindowedStream(topic, windowedStream, namedSupplier)
     }
 
-    fun <U : Any> joinWith(ktable: KTable<U>): JoinedStream<T, U> {
+    fun <U : Any> joinWith(ktable: KTable<U>): JoinedStream<T, T, U> {
         val joinedStream = stream.join(topic, ktable, ::StreamsPair)
         val named = { "${topic.name}-join-${ktable.table.sourceTopic.name}" }
-        return JoinedStream(topic.name, joinedStream, named)
+        return JoinedStream(topic, joinedStream, named)
     }
 
-    fun <U : Any> leftJoinWith(ktable: KTable<U>): JoinedStream<T, U?> {
+    fun <U : Any> leftJoinWith(ktable: KTable<U>): JoinedStream<T, T, U?> {
         val joinedStream = stream.leftJoin(topic, ktable, ::StreamsPair)
         val named = { "${topic.name}-left-join-${ktable.table.sourceTopic.name}" }
-        return JoinedStream(topic.name, joinedStream, named)
+        return JoinedStream(topic, joinedStream, named)
     }
 
     fun branch(predicate: (T) -> Boolean, consumed: ConsumedStream<T>.() -> Unit): BranchedKStream<T> {
@@ -185,9 +185,9 @@ class ConsumedStream<T : Any> internal constructor(
         return ConsumedStream(topic, stream.repartition(repartition), namedSupplier)
     }
 
-    fun <U : Any> processor(processor: Processor<T, U>): MappedStream<U> {
+    fun <U : Any> processor(processor: Processor<T, U>): MappedStream<T, U> {
         val processorStream = stream.addProcessor(processor)
-        return MappedStream(topic.name, processorStream, namedSupplier)
+        return MappedStream(topic, processorStream, namedSupplier)
     }
 
     fun processor(processor: Processor<T, T>): ConsumedStream<T> {
@@ -195,9 +195,9 @@ class ConsumedStream<T : Any> internal constructor(
         return ConsumedStream(topic, processorStream, namedSupplier)
     }
 
-    fun <TABLE : Any, U : Any> processor(processor: StateProcessor<TABLE, T, U>): MappedStream<U> {
+    fun <TABLE : Any, U : Any> processor(processor: StateProcessor<TABLE, T, U>): MappedStream<T, U> {
         val processorStream = stream.addProcessor(processor)
-        return MappedStream(topic.name, processorStream, namedSupplier)
+        return MappedStream(topic, processorStream, namedSupplier)
     }
 
     fun forEach(mapper: (key: String, value: T) -> Unit) {

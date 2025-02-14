@@ -25,6 +25,7 @@ internal object Topics {
 
 internal object Tables {
     val B = Table(Topics.B)
+    val C = Table(Topics.C)
 }
 
 internal class Mock : Streams {

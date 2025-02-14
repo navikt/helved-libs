@@ -1,6 +1,7 @@
 package libs.kafka.stream
 
 import libs.kafka.Topic
+import libs.kafka.stream.MappedStream
 import org.apache.kafka.streams.kstream.Branched
 import org.apache.kafka.streams.kstream.KStream
 
@@ -39,8 +40,8 @@ class BranchedKStream<T : Any> internal constructor(
     )
 }
 
-class BranchedMappedKStream<T : Any> internal constructor(
-    private val sourceTopicName: String,
+class BranchedMappedKStream<S: Any, T : Any> internal constructor(
+    private val topic: Topic<S>,
     private val stream: org.apache.kafka.streams.kstream.BranchedKStream<String, T>,
     private val namedSupplier: () -> String,
 ) {
@@ -49,8 +50,8 @@ class BranchedMappedKStream<T : Any> internal constructor(
 
     fun branch(
         predicate: (T) -> Boolean,
-        consumed: MappedStream<T>.() -> Unit,
-    ): BranchedMappedKStream<T> {
+        consumed: MappedStream<S, T>.() -> Unit,
+    ): BranchedMappedKStream<S, T> {
         val namedBranch = "-branch-$nextBranchNumber"
         val internalPredicate = internalPredicate(predicate)
         val internalBranch = internalBranch(consumed, namedBranch) { "via$namedBranch-${namedSupplier()}" }
@@ -58,18 +59,18 @@ class BranchedMappedKStream<T : Any> internal constructor(
         return this
     }
 
-    fun default(consumed: MappedStream<T>.() -> Unit) {
+    fun default(consumed: MappedStream<S, T>.() -> Unit) {
         val namedBranch = "-branch-default"
         val internalBranch = internalBranch(consumed, namedBranch) { "via$namedBranch-${namedSupplier()}" }
         stream.defaultBranch(internalBranch)
     }
 
     private fun internalBranch(
-        branch: (MappedStream<T>) -> Unit,
+        branch: (MappedStream<S, T>) -> Unit,
         namedBranch: String,
         namedSupplier: () -> String,
     ): Branched<String, T> = Branched.withConsumer(
-        { chain: KStream<String, T> -> branch(MappedStream(sourceTopicName, chain, namedSupplier)) },
+        { chain: KStream<String, T> -> branch(MappedStream(topic, chain, namedSupplier)) },
         namedBranch
     )
 }

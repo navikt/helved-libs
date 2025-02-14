@@ -247,4 +247,26 @@ internal class MappedStreamTest {
         assertEquals("aa", result["test:1"])
         assertEquals("bb", result["test:2"])
     }
+
+    @Test
+    fun `join mapped stream`() {
+        val kafka = Mock.withTopology {
+            val table = consume(Tables.B)
+            consume(Topics.A)
+                .map { it -> "$it$it" }
+                .leftJoinWith(table) {
+                    StringSerde
+                }
+                .map { a, b -> "$a$b" }
+                .produce(Topics.C)
+        }
+
+        kafka.inputTopic(Topics.B).produce("1", "ho")
+        kafka.inputTopic(Topics.A).produce("2", "hey")
+
+        val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
+
+        assertEquals(1, result.size)
+        assertEquals("heyheyho", result["1"])
+    }
 }
