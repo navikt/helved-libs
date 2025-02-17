@@ -9,7 +9,7 @@ data class StreamsPair<L, R>(
     val right: R,
 ) {
     companion object {
-        inline fun <reified L, reified, reified R> of(l: L, r: R): StreamsPair<L, R> {
+        inline fun <reified L, reified R> of(l: L, r: R): StreamsPair<L, R> {
             return StreamsPair(l, r)
         }
     }
