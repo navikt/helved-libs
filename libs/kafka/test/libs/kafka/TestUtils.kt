@@ -5,8 +5,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import libs.kafka.processor.Processor
 import libs.kafka.processor.ProcessorMetadata
 import libs.kafka.processor.StateProcessor
-import libs.kafka.StringSerde
-import libs.kafka.TopologyVisulizer
 import org.apache.kafka.streams.TestInputTopic
 import org.apache.kafka.streams.TestOutputTopic
 import org.apache.kafka.streams.TopologyTestDriver
@@ -16,11 +14,17 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 import kotlin.time.toJavaDuration
 
+data class JsonDto(
+    val id: Int,
+    val data: String,
+)
+
 internal object Topics {
     val A = Topic("A", StringSerde, logValues = true)
     val B = Topic("B", StringSerde, logValues = true)
     val C = Topic("C", StringSerde, logValues = true)
     val D = Topic("D", StringSerde, logValues = true)
+    val E = Topic("E", JsonSerde.jackson<JsonDto>(), logValues = true)
 }
 
 internal object Tables {

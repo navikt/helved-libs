@@ -1,13 +1,19 @@
 package libs.kafka
 
-import org.apache.kafka.streams.KeyValue
-import libs.utils.*
+import libs.utils.logger
 import net.logstash.logback.argument.StructuredArgument
+import org.apache.kafka.streams.KeyValue
 
 data class StreamsPair<L, R>(
     val left: L,
     val right: R,
-)
+) {
+    companion object {
+        inline fun <reified L, reified, reified R> of(l: L, r: R): StreamsPair<L, R> {
+            return StreamsPair(l, r)
+        }
+    }
+}
 
 data class KeyValue<K, V>(
     val key: K,

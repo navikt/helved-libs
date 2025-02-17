@@ -1,10 +1,8 @@
 package libs.kafka.stream
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import libs.kafka.*
-import libs.kafka.Mock
-import libs.kafka.Tables
-import libs.kafka.Topics
-import libs.kafka.produce
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -248,25 +246,28 @@ internal class MappedStreamTest {
         assertEquals("bb", result["test:2"])
     }
 
+    data class ChangedDto<T>(
+        val id: Int,
+        val data: T,
+    )
+
     @Test
     fun `join mapped stream`() {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
-            consume(Topics.A)
-                .map { it -> "$it$it" }
-                .leftJoinWith(table) {
-                    StringSerde
-                }
-                .map { a, b -> "$a$b" }
+            consume(Topics.E)
+                .map { it -> ChangedDto(9, it.data) }
+                .leftJoinWith(table) { JsonSerde.jackson() }
+                .map { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
                 .produce(Topics.C)
         }
 
-        kafka.inputTopic(Topics.B).produce("1", "ho")
-        kafka.inputTopic(Topics.A).produce("1", "hey")
+        kafka.inputTopic(Topics.B).produce("1", "heyheyho")
+        kafka.inputTopic(Topics.E).produce("1", JsonDto(1, "lol"))
 
         val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
 
         assertEquals(1, result.size)
-        assertEquals("heyheyho", result["1"])
+        assertEquals(ChangedDto(9, "heyheyho"), jacksonObjectMapper().readValue<ChangedDto<String>>(result["1"]!!))
     }
 }

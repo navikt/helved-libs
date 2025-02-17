@@ -1,20 +1,18 @@
 package libs.kafka
 
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
 import libs.kafka.processor.LogConsumeTopicProcessor
 import libs.kafka.processor.LogProduceTableProcessor
 import libs.kafka.processor.MetadataProcessor
 import libs.kafka.processor.Processor.Companion.addProcessor
 import libs.kafka.processor.ProcessorMetadata
 import libs.kafka.stream.ConsumedStream
+import org.apache.kafka.streams.KafkaStreams.State.*
+import org.apache.kafka.streams.StoreQueryParameters
 import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Named
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
-import libs.kafka.client.ConsumerFactory
-import libs.kafka.client.ProducerFactory
-import org.apache.kafka.streams.KafkaStreams.State.*
-import org.apache.kafka.streams.StoreQueryParameters
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 import org.apache.kafka.streams.state.ValueAndTimestamp
@@ -69,6 +67,7 @@ class KafkaStreams : Streams {
         )
     )
 }
+
 class Topology internal constructor() {
     private val builder = StreamsBuilder()
 

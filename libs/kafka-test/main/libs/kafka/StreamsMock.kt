@@ -2,9 +2,6 @@ package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.kafka.KafkaTestMetrics
-import libs.kafka.*
-import libs.kafka.client.OffsetResetPolicy
-import libs.kafka.TopologyVisulizer
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy

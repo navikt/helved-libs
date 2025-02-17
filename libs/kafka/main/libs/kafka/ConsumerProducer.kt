@@ -1,7 +1,5 @@
-package libs.kafka.client
+package libs.kafka
 
-import libs.kafka.StreamsConfig
-import libs.kafka.Topic
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.ConsumerConfig
