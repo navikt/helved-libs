@@ -262,7 +262,7 @@ internal class MappedStreamTest {
         }
 
         kafka.inputTopic(Topics.B).produce("1", "ho")
-        kafka.inputTopic(Topics.A).produce("2", "hey")
+        kafka.inputTopic(Topics.A).produce("1", "hey")
 
         val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
 
