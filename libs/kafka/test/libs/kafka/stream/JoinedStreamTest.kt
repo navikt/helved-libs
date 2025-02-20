@@ -16,8 +16,8 @@ internal class JoinedStreamTest {
     fun `join topic with table`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .joinWith(consume(Tables.B))
-                .map { a, b -> b + a }
+                .join(Topics.A, consume(Tables.B))
+                .map(StringSerde) { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -35,8 +35,8 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it != "humbug" }
-                .joinWith(consume(Tables.B))
-                .map { a, b -> b + a }
+                .join(Topics.A, consume(Tables.B))
+                .map(StringSerde) { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -60,8 +60,8 @@ internal class JoinedStreamTest {
     fun `join topic with table and write back to topic`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .leftJoinWith(consume(Tables.B))
-                .map { a, b -> a + b }
+                .leftJoin(Topics.A, consume(Tables.B))
+                .map(StringSerde) { a, b -> a + b }
                 .produce(Topics.B)
         }
 
@@ -83,8 +83,8 @@ internal class JoinedStreamTest {
     fun `left join topic with table`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .leftJoinWith(consume(Tables.B))
-                .map { left, _ -> left }
+                .leftJoin(Topics.A, consume(Tables.B))
+                .map(StringSerde) { left, _ -> left }
                 .produce(Topics.C)
         }
 
@@ -100,8 +100,8 @@ internal class JoinedStreamTest {
     fun `left join topic with table with no match`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .leftJoinWith(consume(Tables.B))
-                .map { left, right -> right ?: left }
+                .leftJoin(Topics.A, consume(Tables.B))
+                .map(StringSerde) { left, right -> right ?: left }
                 .produce(Topics.C)
         }
 
@@ -117,8 +117,8 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it != "humbug" }
-                .leftJoinWith(consume(Tables.B))
-                .map { a, b -> b + a }
+                .leftJoin(Topics.A, consume(Tables.B))
+                .map(StringSerde) { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -143,8 +143,8 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it != "humbug" }
-                .leftJoinWith(consume(Tables.B))
-                .map { a, b -> (b ?: "") + a }
+                .leftJoin(Topics.A, consume(Tables.B))
+                .map(StringSerde) { a, b -> (b ?: "") + a }
                 .produce(Topics.C)
         }
 
@@ -165,8 +165,8 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it != "humbug" }
-                .joinWith(consume(Tables.B))
-                .flatMapKeyValue { s, a, b -> listOf(KeyValue(s, a), KeyValue(s, b)) }
+                .join(Topics.A, consume(Tables.B))
+                .flatMapKeyValue(Serdes(StringSerde, StringSerde)) { s, a, b -> listOf(KeyValue(s, a), KeyValue(s, b)) }
                 .produce(Topics.C)
         }
 
@@ -184,7 +184,7 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it != "humbug" }
-                .joinWith(consume(Tables.B))
+                .join(Topics.A, consume(Tables.B))
                 .secureLogWithKey { key, left, right -> info("$key$left$right") }
         }
         kafka.inputTopic(Topics.B).produce("1", "humbug").produce("2", "humbug")
@@ -196,7 +196,7 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .filter { it != "humbug" }
-                .leftJoinWith(consume(Tables.B))
+                .leftJoin(Topics.A, consume(Tables.B))
                 .secureLogWithKey { key, left, right -> info("$key$left$right") }
         }
         kafka.inputTopic(Topics.A).produce("1", "sauce").produce("2", "price")
@@ -207,8 +207,8 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
-                .joinWith(table)
-                .map { a, b -> b + a }
+                .join(Topics.A, table)
+                .map(StringSerde) { a, b -> b + a }
                 .filter { it == "niceprice" }
                 .produce(Topics.C)
         }
@@ -233,9 +233,9 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
-                .joinWith(table)
-                .rekey { a, b -> b + a }
-                .map { a, _ -> a }
+                .join(Topics.A, table)
+                .rekey(StringSerde) { a, b -> b + a }
+                .map(StringSerde) { a, _ -> a }
                 .produce(Topics.C)
         }
 

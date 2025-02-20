@@ -2,81 +2,77 @@ package libs.kafka.stream
 
 import libs.kafka.Topic
 import libs.kafka.stream.MappedStream
+import libs.kafka.Serdes
 import org.apache.kafka.streams.kstream.Branched
 import org.apache.kafka.streams.kstream.KStream
 
-class BranchedKStream<T : Any> internal constructor(
-    private val topic: Topic<T>,
-    private val stream: org.apache.kafka.streams.kstream.BranchedKStream<String, T>,
+class BranchedKStream<K: Any, V : Any> internal constructor(
+    private val serdes: Serdes<K, V>,
+    private val stream: org.apache.kafka.streams.kstream.BranchedKStream<K, V>,
     private val namedSupplier: () -> String,
 ) {
     private var nextBranchNumber: Int = 1
         get() = field++
 
     fun branch(
-        predicate: (T) -> Boolean,
-        consumed: ConsumedStream<T>.() -> Unit,
-    ): BranchedKStream<T> {
+        predicate: (V) -> Boolean,
+        consumed: ConsumedStream<K, V>.() -> Unit,
+    ): BranchedKStream<K, V> {
         val namedBranch = "-branch-$nextBranchNumber"
-        val internalPredicate = internalPredicate(predicate)
+        val internalPredicate = { _:K, value: V -> predicate(value) }
         val internalBranch = internalBranch(consumed, namedBranch) { "via$namedBranch-${namedSupplier()}" }
         stream.branch(internalPredicate, internalBranch)
         return this
     }
 
-    fun default(consumed: ConsumedStream<T>.() -> Unit) {
+    fun default(consumed: ConsumedStream<K, V>.() -> Unit) {
         val namedBranch = "-branch-default"
         val internalBranch = internalBranch(consumed, namedBranch) { "via$namedBranch-${namedSupplier()}" }
         stream.defaultBranch(internalBranch)
     }
 
     private fun internalBranch(
-        branch: (ConsumedStream<T>) -> Unit,
+        branch: (ConsumedStream<K, V>) -> Unit,
         namedBranch: String,
         namedSupplier: () -> String,
-    ): Branched<String, T> = Branched.withConsumer(
-        { chain: KStream<String, T> -> branch(ConsumedStream(topic, chain, namedSupplier)) },
+    ): Branched<K, V> = Branched.withConsumer(
+        { chain: KStream<K, V> -> branch(ConsumedStream(serdes, chain, namedSupplier)) },
         namedBranch
     )
 }
 
-class BranchedMappedKStream<S: Any, T : Any> internal constructor(
-    private val topic: Topic<S>,
-    private val stream: org.apache.kafka.streams.kstream.BranchedKStream<String, T>,
+class BranchedMappedKStream<K: Any, V : Any> internal constructor(
+    private val serdes: Serdes<K, V>,
+    private val stream: org.apache.kafka.streams.kstream.BranchedKStream<K, V>,
     private val namedSupplier: () -> String,
 ) {
     private var nextBranchNumber: Int = 1
         get() = field++
 
     fun branch(
-        predicate: (T) -> Boolean,
-        consumed: MappedStream<S, T>.() -> Unit,
-    ): BranchedMappedKStream<S, T> {
+        predicate: (V) -> Boolean,
+        consumed: MappedStream<K, V>.() -> Unit,
+    ): BranchedMappedKStream<K, V> {
         val namedBranch = "-branch-$nextBranchNumber"
-        val internalPredicate = internalPredicate(predicate)
+        val internalPredicate = { _:K, value: V -> predicate(value) }
         val internalBranch = internalBranch(consumed, namedBranch) { "via$namedBranch-${namedSupplier()}" }
         stream.branch(internalPredicate, internalBranch)
         return this
     }
 
-    fun default(consumed: MappedStream<S, T>.() -> Unit) {
+    fun default(consumed: MappedStream<K, V>.() -> Unit) {
         val namedBranch = "-branch-default"
         val internalBranch = internalBranch(consumed, namedBranch) { "via$namedBranch-${namedSupplier()}" }
         stream.defaultBranch(internalBranch)
     }
 
     private fun internalBranch(
-        branch: (MappedStream<S, T>) -> Unit,
+        branch: (MappedStream<K, V>) -> Unit,
         namedBranch: String,
         namedSupplier: () -> String,
-    ): Branched<String, T> = Branched.withConsumer(
-        { chain: KStream<String, T> -> branch(MappedStream(topic, chain, namedSupplier)) },
+    ): Branched<K, V> = Branched.withConsumer(
+        { chain: KStream<K, V> -> branch(MappedStream(serdes, chain, namedSupplier)) },
         namedBranch
     )
 }
 
-private fun <T> internalPredicate(
-    predicate: (T) -> Boolean,
-): (String, T) -> Boolean = { _: String, value: T ->
-    predicate(value)
-}

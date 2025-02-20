@@ -12,6 +12,11 @@ import org.apache.kafka.common.serialization.Serde
 import org.apache.kafka.common.serialization.Serdes
 import org.apache.kafka.common.serialization.Serializer
 
+data class Serdes<K: Any, V>(
+    val key: StreamSerde<K>, 
+    val value: StreamSerde<V>,
+)
+
 interface StreamSerde<T> : Serde<T>
 
 object StringSerde : StreamSerde<String> {

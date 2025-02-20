@@ -20,11 +20,11 @@ data class JsonDto(
 )
 
 internal object Topics {
-    val A = Topic("A", StringSerde, logValues = true)
-    val B = Topic("B", StringSerde, logValues = true)
-    val C = Topic("C", StringSerde, logValues = true)
-    val D = Topic("D", StringSerde, logValues = true)
-    val E = Topic("E", JsonSerde.jackson<JsonDto>(), logValues = true)
+    val A = Topic("A", Serdes(StringSerde, StringSerde))
+    val B = Topic("B", Serdes(StringSerde, StringSerde))
+    val C = Topic("C", Serdes(StringSerde, StringSerde))
+    val D = Topic("D", Serdes(StringSerde, StringSerde))
+    val E = Topic("E", Serdes(StringSerde, JsonSerde.jackson<JsonDto>()))
 }
 
 internal object Tables {
@@ -52,11 +52,11 @@ internal class Mock : Streams {
         internalStreams = TopologyTestDriver(internalTopology)
     }
 
-    internal fun <V : Any> inputTopic(topic: Topic<V>): TestInputTopic<String, V> =
-        internalStreams.createInputTopic(topic.name, topic.keySerde.serializer(), topic.valueSerde.serializer())
+    internal fun <K: Any, V : Any> inputTopic(topic: Topic<K, V>): TestInputTopic<K, V> =
+        internalStreams.createInputTopic(topic.name, topic.serdes.key.serializer(), topic.serdes.value.serializer())
 
-    internal fun <V : Any> outputTopic(topic: Topic<V>): TestOutputTopic<String, V> =
-        internalStreams.createOutputTopic(topic.name, topic.keySerde.deserializer(), topic.valueSerde.deserializer())
+    internal fun <K: Any, V : Any> outputTopic(topic: Topic<K, V>): TestOutputTopic<K, V> =
+        internalStreams.createOutputTopic(topic.name, topic.serdes.key.deserializer(), topic.serdes.value.deserializer())
 
 
     internal fun advanceWallClockTime(duration: Duration) =
@@ -69,10 +69,7 @@ internal class Mock : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <T : Any> getStore(table: Table<T>): StateStore<T> =
-        StateStore(internalStreams.getKeyValueStore(table.stateStoreName))
-
-    override fun <T : Any> getStore(name: StateStoreName): StateStore<T> =
+    override fun <K: Any, T : Any> getStore(name: StateStoreName): StateStore<K, T> =
         StateStore(internalStreams.getKeyValueStore(name))
 
     override fun close() = internalStreams.close()
@@ -80,13 +77,13 @@ internal class Mock : Streams {
 
 internal val Int.ms get() = toDuration(DurationUnit.MILLISECONDS)
 
-internal fun <V> TestInputTopic<String, V>.produce(key: String, value: V): TestInputTopic<String, V> =
+internal fun <K: Any, V> TestInputTopic<K, V>.produce(key: K, value: V): TestInputTopic<K, V> =
     pipeInput(key, value).let { this }
 
-internal fun <V> TestInputTopic<String, V>.produceTombstone(key: String): TestInputTopic<String, V> =
+internal fun <K: Any, V> TestInputTopic<K, V>.produceTombstone(key: K): TestInputTopic<K, V> =
     pipeInput(key, null).let { this }
 
-class CustomProcessorWithTable(table: KTable<String>) : StateProcessor<String, String, String>("custom-join", table) {
+class CustomProcessorWithTable(table: KTable<String, String>) : StateProcessor<String, String, String, String>("custom-join", table) {
     override fun process(
         metadata: ProcessorMetadata,
         store: TimestampedKeyValueStore<String, String>,
@@ -94,7 +91,7 @@ class CustomProcessorWithTable(table: KTable<String>) : StateProcessor<String, S
     ): String = "${keyValue.value}${store[keyValue.key].value()}"
 }
 
-open class CustomProcessor : Processor<String, String>("add-v2-prefix") {
+open class CustomProcessor : Processor<String, String, String>("add-v2-prefix") {
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): String =
         "${keyValue.value}.v2"
 }

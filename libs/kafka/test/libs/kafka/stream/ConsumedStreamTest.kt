@@ -21,7 +21,7 @@ internal class ConsumedStreamTest {
     fun `map with metadata`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .mapWithMetadata { value, metadata -> value + metadata.topic }
+                .mapWithMetadata(StringSerde) { value, metadata -> value + metadata.topic }
                 .produce(Topics.B)
         }
 
@@ -68,7 +68,7 @@ internal class ConsumedStreamTest {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
-                .processor(CustomProcessorWithTable(table))
+                .processor(StringSerde, CustomProcessorWithTable(table))
                 .produce(Topics.C)
         }
 
@@ -84,12 +84,12 @@ internal class ConsumedStreamTest {
     fun `use custom processor with mapping`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .processor(object : Processor<String, Int>("named") {
+                .processor(JsonSerde.jackson(), object : Processor<String, String, Int>("named") {
                     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): Int {
                         return keyValue.value.toInt() + 1
                     }
                 })
-                .map(Int::toString)
+                .map(StringSerde, Int::toString)
                 .produce(Topics.C)
         }
 
@@ -104,7 +104,7 @@ internal class ConsumedStreamTest {
     fun `use custom processor in place`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .processor(object : Processor<String, String>("something") {
+                .processor(object : Processor<String, String, String>("something") {
                     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): String {
                         return keyValue.value
                     }
@@ -208,8 +208,8 @@ internal class ConsumedStreamTest {
     fun `flat map`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .flatMap { _, _ -> listOf("a".hashCode(), "b".hashCode()) }
-                .map { value -> value.toString() }
+                .flatMap(JsonSerde.jackson()) { _, _ -> listOf("a".hashCode(), "b".hashCode()) }
+                .map(StringSerde) { value -> value.toString() }
                 .produce(Topics.C)
         }
 
@@ -225,7 +225,7 @@ internal class ConsumedStreamTest {
     fun `flat map to key and value`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .flatMapKeyAndValue { key, value ->
+                .flatMapKeyAndValue(StringSerde) { key, value ->
                     val hashKey = key.hashCode().toString()
                     val hashValue = value.hashCode().toString()
 
@@ -249,12 +249,12 @@ internal class ConsumedStreamTest {
     fun repartition() {
         val msg = assertThrows<TopologyException> {
             Mock.withTopology {
-                val ktable = consumeRepartitioned(Tables.B, 3)
+                val ktable = consumeRepartitioned(Serdes(StringSerde, StringSerde), Tables.B, 3)
 
                 consume(Topics.A)
                     .repartition(4)
-                    .joinWith(ktable)
-                    .map { a, b -> a + b }
+                    .join(Topics.A, ktable)
+                    .map(StringSerde) { a, b -> a + b }
                     .produce(Topics.C)
             }
         }

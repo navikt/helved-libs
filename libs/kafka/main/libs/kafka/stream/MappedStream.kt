@@ -8,85 +8,85 @@ import libs.kafka.processor.StateProcessor.Companion.addProcessor
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Named
 
-class MappedStream<S: Any, T : Any> internal constructor(
-    private val topic: Topic<S>,
-    private val stream: KStream<String, T>,
+class MappedStream<K: Any, V : Any> internal constructor(
+    private val serdes: Serdes<K, V>,
+    private val stream: KStream<K, V>,
     private val namedSupplier: () -> String,
 ) {
-    fun produce(topic: Topic<T>) {
+    fun produce(topic: Topic<K, V>) {
         val named = "produced-${topic.name}-${namedSupplier()}"
         stream.produceWithLogging(topic, named)
     }
 
-    fun materialize(serde: StreamSerde<T>): StateStoreName {
+    fun materialize(): StateStoreName {
         val stateStoreName: StateStoreName = "${namedSupplier()}-to-table" 
-        stream.toTable(materialized(stateStoreName, serde))
+        stream.toTable(materialized(stateStoreName, serdes))
         return stateStoreName
     }
 
-    fun <R : Any> map(mapper: (T) -> R): MappedStream<S, R> {
+    fun <U : Any> map(serde: StreamSerde<U>, mapper: (V) -> U): MappedStream<K, U> {
         val mappedStream = stream.mapValues { lr -> mapper(lr) }
-        return MappedStream(topic, mappedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), mappedStream, namedSupplier)
     }
 
-    fun <R : Any> map(mapper: (key: String, value: T) -> R): MappedStream<S, R> {
+    fun <U : Any> map(serde: StreamSerde<U>, mapper: (key: K, value: V) -> U): MappedStream<K, U> {
         val mappedStream = stream.mapValues { key, value -> mapper(key, value) }
-        return MappedStream(topic, mappedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), mappedStream, namedSupplier)
     }
 
-    fun <U : Any> leftJoinWith(ktable: KTable<U>, serde: () -> StreamSerde<T>): JoinedStream<S, T, U?> {
-        val joinedStream = stream.leftJoin(topic, serde(), ktable, ::StreamsPair)
-        val named = { "${topic.name}-left-join-${ktable.table.sourceTopic.name}" }
-        return JoinedStream(topic, joinedStream, named)
+    fun <U : Any> leftJoin(right: KTable<K, U>): JoinedStream<K, V, U?> {
+        val named = "${namedSupplier()}-left-join-${right.table.sourceTopic.name}"
+        val joinedStream = stream.leftJoin(named, serdes, right, ::StreamsPair)
+        return JoinedStream(serdes, joinedStream, { named })
     }
 
-    fun <R : Any> flatMap(mapper: (value: T) -> Iterable<R>): MappedStream<S, R> {
+    fun <U : Any> flatMap(serde: StreamSerde<U>, mapper: (value: V) -> Iterable<U>): MappedStream<K, U> {
         val flattenedStream = stream.flatMapValues { _, value -> mapper(value) }
-        return MappedStream(topic, flattenedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), flattenedStream, namedSupplier)
     }
 
-    fun rekey(mapper: (value: T) -> String): MappedStream<S, T> {
+    fun <K2: Any> rekey(serde: StreamSerde<K2>, mapper: (value: V) -> K2): MappedStream<K2, V> {
         val rekeyedStream = stream.selectKey { _, value -> mapper(value) }
-        return MappedStream(topic, rekeyedStream, namedSupplier)
+        return MappedStream(Serdes(serde, serdes.value), rekeyedStream, namedSupplier)
     }
 
-    fun filter(lambda: (T) -> Boolean): MappedStream<S, T> {
+    fun filter(lambda: (V) -> Boolean): MappedStream<K, V> {
         val filteredStream = stream.filter { _, value -> lambda(value) }
-        return MappedStream(topic, filteredStream, namedSupplier)
+        return MappedStream(serdes, filteredStream, namedSupplier)
     }
 
-    fun branch(predicate: (T) -> Boolean, consumed: MappedStream<S, T>.() -> Unit): BranchedMappedKStream<S, T> {
+    fun branch(predicate: (V) -> Boolean, consumed: MappedStream<K, V>.() -> Unit): BranchedMappedKStream<K, V> {
         val named = Named.`as`("split-${namedSupplier()}")
         val branchedStream = stream.split(named)
-        return BranchedMappedKStream(topic, branchedStream, namedSupplier).branch(predicate, consumed)
+        return BranchedMappedKStream(serdes, branchedStream, namedSupplier).branch(predicate, consumed)
     }
 
-    fun secureLog(logger: Log.(value: T) -> Unit): MappedStream<S, T> {
+    fun secureLog(logger: Log.(value: V) -> Unit): MappedStream<K, V> {
         val loggedStream = stream.peek { _, value -> logger.invoke(Log.secure, value) }
-        return MappedStream(topic, loggedStream, namedSupplier)
+        return MappedStream(serdes, loggedStream, namedSupplier)
     }
 
-    fun secureLogWithKey(log: Log.(key: String, value: T) -> Unit): MappedStream<S, T> {
+    fun secureLogWithKey(log: Log.(key: K, value: V) -> Unit): MappedStream<K, V> {
         val loggedStream = stream.peek { key, value -> log.invoke(Log.secure, key, value) }
-        return MappedStream(topic, loggedStream, namedSupplier)
+        return MappedStream(serdes, loggedStream, namedSupplier)
     }
 
-    fun <U : Any> processor(processor: Processor<T, U>): MappedStream<S, U> {
+    fun <U : Any> processor(serde: StreamSerde<U>, processor: Processor<K, V, U>): MappedStream<K, U> {
         val processedStream = stream.addProcessor(processor)
-        return MappedStream(topic, processedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), processedStream, namedSupplier)
     }
 
-    fun <TABLE : Any, U : Any> processor(processor: StateProcessor<TABLE, T, U>): MappedStream<S, U> {
+    fun <TABLE : Any, U : Any> processor(serde: StreamSerde<U>, processor: StateProcessor<K, TABLE, V, U>): MappedStream<K, U> {
         val processedStream = stream.addProcessor(processor)
-        return MappedStream(topic, processedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), processedStream, namedSupplier)
     }
 
-    fun forEach(mapper: (key: String, value: T) -> Unit) {
+    fun forEach(mapper: (key: K, value: V) -> Unit) {
         val named = Named.`as`("foreach-${namedSupplier()}")
         stream.foreach(mapper, named)
     }
 
-    fun forEach(mapper: (value: T) -> Unit) {
+    fun forEach(mapper: (value: V) -> Unit) {
         val named = Named.`as`("foreach-${namedSupplier()}")
         stream.foreach { _, value -> mapper(value) }
     }

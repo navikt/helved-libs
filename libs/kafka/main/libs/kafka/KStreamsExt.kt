@@ -1,18 +1,13 @@
 package libs.kafka
 
-import libs.kafka.processor.LogProduceTableProcessor
-import libs.kafka.processor.LogProduceTopicProcessor
+import libs.kafka.processor.*
 import libs.kafka.processor.Processor.Companion.addProcessor
 import org.apache.kafka.common.utils.Bytes
-import org.apache.kafka.streams.kstream.KStream
-import org.apache.kafka.streams.kstream.Materialized
-import org.apache.kafka.streams.kstream.Named
-import org.apache.kafka.streams.kstream.Repartitioned
-import org.apache.kafka.streams.kstream.Joined
+import org.apache.kafka.streams.kstream.*
 import org.apache.kafka.streams.state.KeyValueStore
 
-internal fun <T : Any> KStream<String, T>.produceWithLogging(
-    topic: Topic<T>,
+internal fun <K: Any, V : Any> KStream<K, V>.produceWithLogging(
+    topic: Topic<K, V>,
     named: String,
 ) {
     val logger = LogProduceTopicProcessor("log-${named}", topic)
@@ -20,125 +15,121 @@ internal fun <T : Any> KStream<String, T>.produceWithLogging(
     return addProcessor(logger).to(topic.name, options)
 }
 
-internal fun <L : Any, R : Any, LR> KStream<String, L>.leftJoin(
-    left: Topic<L>,
-    right: KTable<R>,
-    joiner: (String, L, R?) -> LR,
-): KStream<String, LR> {
+internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.leftJoin(
+    left: Topic<K, L>,
+    right: KTable<K, R>,
+    joiner: (K, L, R?) -> LR,
+): KStream<K, LR> {
     val ktable = right.internalKTable
     val joined = left leftJoin right
     return leftJoin(ktable, joiner, joined)
 }
 
-internal fun <S: Any, L : Any, R : Any, LR> KStream<String, L>.leftJoin(
-    topic: Topic<S>,
-    valueSerde: StreamSerde<L>,
-    right: KTable<R>,
+internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.leftJoin(
+    named: String,
+    leftSerdes: Serdes<K, L>,
+    ktable: KTable<K, R>,
     joiner: (L, R?) -> LR,
-): KStream<String, LR> {
-    val keySerde = right.table.sourceTopic.keySerde
-    val rightValueSerde = right.table.sourceTopic.valueSerde
-    val named = "${topic.name}-left-join-${right.table.sourceTopic.name}"
-    val joined = Joined.with(keySerde, valueSerde, rightValueSerde, named)
-    return leftJoin(right.internalKTable, joiner, joined)
+): KStream<K, LR> {
+    val joined = Joined.with(leftSerdes.key, leftSerdes.value, ktable.serdes.value, named)
+    return leftJoin(ktable.internalKTable, joiner, joined)
 }
 
-internal fun <L : Any, R : Any, LR> KStream<String, L>.leftJoin(
-    left: Topic<L>,
-    right: KTable<R>,
+internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.leftJoin(
+    left: Topic<K, L>,
+    right: KTable<K, R>,
     joiner: (L, R?) -> LR,
-): KStream<String, LR> {
+): KStream<K, LR> {
     val ktable = right.internalKTable
     val joined = left leftJoin right
     return leftJoin(ktable, joiner, joined)
 }
 
-internal fun <L : Any, R : Any, LR> KTable<L>.leftJoin(
-    right: KTable<R>,
+internal fun <K: Any, L : Any, R : Any, LR> KTable<K, L>.leftJoin(
+    right: KTable<K, R>,
     joiner: (L?, R?) -> LR,
-): KStream<String, LR> {
+): KStream<K, LR> {
     return internalKTable.leftJoin(right.internalKTable, joiner).toStream()
 }
 
-internal fun <L : Any, R : Any, LR> KStream<String, L>.join(
-    left: Topic<L>,
-    right: KTable<R>,
-    joiner: (String, L, R) -> LR,
-): KStream<String, LR> {
+internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.join(
+    left: Topic<K, L>,
+    right: KTable<K, R>,
+    joiner: (K, L, R) -> LR,
+): KStream<K, LR> {
     val ktable = right.tombstonedInternalKTable
     val joined = left join right
     return join(ktable, joiner, joined)
 }
 
-internal fun <L : Any, R : Any, LR> KStream<String, L>.join(
-    left: Topic<L>,
-    right: KTable<R>,
+internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.join(
+    left: Topic<K, L>,
+    right: KTable<K, R>,
     joiner: (L, R) -> LR,
-): KStream<String, LR> {
+): KStream<K, LR> {
     val ktable = right.tombstonedInternalKTable
     val joined = left join right
     return join(ktable, joiner, joined)
 }
 
-internal fun <T : Any> KStream<String, T?>.toKtable(table: Table<T>): KTable<T> {
+internal fun <K: Any, V : Any> KStream<K, V?>.toKTable(serdes: Serdes<K, V>, table: Table<K, V>): KTable<K, V> {
     val internalKTable = addProcessor(LogProduceTableProcessor(table))
         .toTable(
             Named.`as`("${table.sourceTopicName}-to-table"),
             materialized(table)
         )
 
-    return KTable(table, internalKTable)
+    return KTable(table, serdes, internalKTable)
 }
 
-internal fun <T> repartitioned(table: Table<T & Any>, partitions: Int): Repartitioned<String, T> {
+internal fun <K: Any, V> repartitioned(table: Table<K, V & Any>, partitions: Int): Repartitioned<K, V> {
     return Repartitioned
-        .with(table.sourceTopic.keySerde, table.sourceTopic.valueSerde)
+        .with(table.sourceTopic.serdes.key, table.sourceTopic.serdes.value)
         .withNumberOfPartitions(partitions)
         .withName(table.sourceTopicName)
 }
 
-internal fun <T : Any> materialized(
+internal fun <K: Any, V : Any> materialized(
     stateStoreName: String,
-    valueSerde: StreamSerde<T>, 
-    keySerde: StreamSerde<String> = StringSerde, 
-): Materialized<String, T?, KeyValueStore<Bytes, ByteArray>> {
-    return Materialized.`as`<String, T, KeyValueStore<Bytes, ByteArray>>(stateStoreName)
-        .withKeySerde(keySerde)
-        .withValueSerde(valueSerde)
+    serdes: Serdes<K, V>,
+): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {
+    return Materialized.`as`<K, V, KeyValueStore<Bytes, ByteArray>>(stateStoreName)
+        .withKeySerde(serdes.key)
+        .withValueSerde(serdes.value)
 }
 
-internal fun <T : Any> materialized(table: Table<T>): Materialized<String, T?, KeyValueStore<Bytes, ByteArray>> {
-    return Materialized.`as`<String, T, KeyValueStore<Bytes, ByteArray>>(table.stateStoreName)
-        .withKeySerde(table.sourceTopic.keySerde)
-        .withValueSerde(table.sourceTopic.valueSerde)
+internal fun <K: Any, V : Any> materialized(table: Table<K, V>): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {
+    return Materialized.`as`<K, V, KeyValueStore<Bytes, ByteArray>>(table.stateStoreName)
+        .withKeySerde(table.sourceTopic.serdes.key)
+        .withValueSerde(table.sourceTopic.serdes.value)
 }
 
 @Suppress("UNCHECKED_CAST")
-internal fun <V> KStream<String, V>.filterNotNull(): KStream<String, V & Any> {
+internal fun <K: Any, V> KStream<K, V>.filterNotNull(): KStream<K, V & Any> {
     val filteredInternalKStream = filter { _, value -> value != null }
-    return filteredInternalKStream as KStream<String, V & Any>
+    return filteredInternalKStream as KStream<K, V & Any>
 }
 
 @Suppress("UNCHECKED_CAST")
-internal fun <T> org.apache.kafka.streams.kstream.KTable<String, T>.skipTombstone(
-    table: Table<T & Any>
-): org.apache.kafka.streams.kstream.KTable<String, T & Any> {
+internal fun <K: Any, V> org.apache.kafka.streams.kstream.KTable<K, V>.skipTombstone(
+    table: Table<K, V & Any>
+): org.apache.kafka.streams.kstream.KTable<K, V & Any> {
     val named = Named.`as`("skip-table-${table.sourceTopicName}-tombstone")
     val filteredInternalKTable = filter({ _, value -> value != null }, named)
-    return filteredInternalKTable as org.apache.kafka.streams.kstream.KTable<String, T & Any>
+    return filteredInternalKTable as org.apache.kafka.streams.kstream.KTable<K, V & Any>
 }
 
-internal fun <V> KStream<String, V>.skipTombstone(topic: Topic<V & Any>): KStream<String, V & Any> {
+internal fun <K: Any, V> KStream<K, V>.skipTombstone(topic: Topic<K, V & Any>): KStream<K, V & Any> {
     return skipTombstone(topic, "")
 }
 
 @Suppress("UNCHECKED_CAST")
-internal fun <V> KStream<String, V>.skipTombstone(
-    topic: Topic<V & Any>,
+internal fun <K: Any, V> KStream<K, V>.skipTombstone(
+    topic: Topic<K, V & Any>,
     namedSuffix: String,
-): KStream<String, V & Any> {
+): KStream<K, V & Any> {
     val named = Named.`as`("skip-${topic.name}-tombstone$namedSuffix")
     val filteredInternalStream = filter({ _, value -> value != null }, named)
-    return filteredInternalStream as KStream<String, V & Any>
+    return filteredInternalStream as KStream<K, V & Any>
 }
 

@@ -7,13 +7,7 @@ import org.apache.kafka.streams.KeyValue
 data class StreamsPair<L, R>(
     val left: L,
     val right: R,
-) {
-    companion object {
-        inline fun <reified L, reified R> of(l: L, r: R): StreamsPair<L, R> {
-            return StreamsPair(l, r)
-        }
-    }
-}
+) 
 
 data class KeyValue<K, V>(
     val key: K,

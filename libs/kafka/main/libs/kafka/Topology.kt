@@ -2,23 +2,15 @@ package libs.kafka
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics
-import libs.kafka.processor.LogConsumeTopicProcessor
-import libs.kafka.processor.LogProduceTableProcessor
-import libs.kafka.processor.MetadataProcessor
+import libs.kafka.processor.*
 import libs.kafka.processor.Processor.Companion.addProcessor
-import libs.kafka.processor.ProcessorMetadata
 import libs.kafka.stream.ConsumedStream
+import org.apache.kafka.streams.*
 import org.apache.kafka.streams.KafkaStreams.State.*
-import org.apache.kafka.streams.StoreQueryParameters
-import org.apache.kafka.streams.StreamsBuilder
-import org.apache.kafka.streams.kstream.KStream
-import org.apache.kafka.streams.kstream.Named
-import org.apache.kafka.streams.state.QueryableStoreTypes
-import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
-import org.apache.kafka.streams.state.TimestampedKeyValueStore
-import org.apache.kafka.streams.state.ValueAndTimestamp
+import org.apache.kafka.streams.kstream.*
+import org.apache.kafka.streams.state.*
 
-private fun <T : Any> nameSupplierFrom(topic: Topic<T>): () -> String = { "from-${topic.name}" }
+private fun <K: Any, V : Any> nameSupplierFrom(topic: Topic<K, V>): () -> String = { "from-${topic.name}" }
 
 interface Streams : ProducerFactory, ConsumerFactory, AutoCloseable {
     fun connect(topology: Topology, config: StreamsConfig, registry: MeterRegistry)
@@ -26,8 +18,7 @@ interface Streams : ProducerFactory, ConsumerFactory, AutoCloseable {
     fun live(): Boolean
     fun visulize(): TopologyVisulizer
     fun registerInternalTopology(internalTopology: org.apache.kafka.streams.Topology)
-    fun <T : Any> getStore(table: Table<T>): StateStore<T>
-    fun <T : Any> getStore(name: StateStoreName): StateStore<T>
+    fun <K: Any, T : Any> getStore(name: StateStoreName): StateStore<K, T>
 }
 
 class KafkaStreams : Streams {
@@ -60,15 +51,7 @@ class KafkaStreams : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <T : Any> getStore(table: Table<T>): StateStore<T> = StateStore(
-        internalStreams.store(
-            StoreQueryParameters.fromNameAndType(
-                table.stateStoreName,
-                QueryableStoreTypes.keyValueStore()
-            )
-        )
-    )
-    override fun <T : Any> getStore(name: StateStoreName): StateStore<T> = StateStore(
+    override fun <K: Any, T : Any> getStore(name: StateStoreName): StateStore<K, T> = StateStore(
         internalStreams.store(
             StoreQueryParameters.fromNameAndType(
                 name,
@@ -81,18 +64,18 @@ class KafkaStreams : Streams {
 class Topology internal constructor() {
     private val builder = StreamsBuilder()
 
-    fun <T : Any> consume(topic: Topic<T>): ConsumedStream<T> {
-        val consumed = consumeWithLogging<T?>(topic).skipTombstone(topic)
-        return ConsumedStream(topic, consumed, nameSupplierFrom(topic))
+    fun <K: Any, V : Any> consume(topic: Topic<K, V>): ConsumedStream<K, V> {
+        val consumed = consumeWithLogging<K, V?>(topic).skipTombstone(topic)
+        return ConsumedStream(topic.serdes, consumed, nameSupplierFrom(topic))
     }
 
-    fun <T : Any> consume(table: Table<T>): KTable<T> {
-        val stream = consumeWithLogging<T?>(table.sourceTopic)
-        return stream.toKtable(table)
+    fun <K: Any, V : Any> consume(table: Table<K, V>): KTable<K, V> {
+        val stream = consumeWithLogging<K, V?>(table.sourceTopic)
+        return stream.toKTable(table.serdes, table)
     }
 
-    fun <T : Any> consumeRepartitioned(table: Table<T>, partitions: Int): KTable<T> {
-        val internalKTable = consumeWithLogging<T?>(table.sourceTopic)
+    fun <K: Any, V : Any> consumeRepartitioned(serdes: Serdes<K, V>, table: Table<K, V>, partitions: Int): KTable<K, V> {
+        val internalKTable = consumeWithLogging<K, V?>(table.sourceTopic)
             .repartition(repartitioned(table, partitions))
             .addProcessor(LogProduceTableProcessor(table))
             .toTable(
@@ -100,28 +83,28 @@ class Topology internal constructor() {
                 materialized(table)
             )
 
-        return KTable(table = table, internalKTable = internalKTable)
+        return KTable(table, serdes, internalKTable)
     }
 
     /**
      * The topology does not allow duplicate named nodes.
      * Somethimes it is necessary to consume the same topic again for mocking external responses.
      */
-    fun <T : Any> consumeForMock(topic: Topic<T>, namedPrefix: String = "mock"): ConsumedStream<T> {
+    fun <K: Any, V : Any> consumeForMock(topic: Topic<K, V>, namedPrefix: String = "mock"): ConsumedStream<K, V> {
         val consumed = consumeWithLogging(topic, namedPrefix).skipTombstone(topic, namedPrefix)
         val prefixedNamedSupplier = { "$namedPrefix-${nameSupplierFrom(topic).invoke()}" }
-        return ConsumedStream(topic, consumed, prefixedNamedSupplier)
+        return ConsumedStream(topic.serdes, consumed, prefixedNamedSupplier)
     }
 
-    fun <T : Any> consume(
-        topic: Topic<T>,
-        onEach: (key: String, value: T?, metadata: ProcessorMetadata) -> Unit,
-    ): ConsumedStream<T> {
-        val stream = consumeWithLogging<T?>(topic)
-        stream.addProcessor(MetadataProcessor(topic)).foreach { _, (kv, metadata) ->
+    fun <K: Any, V : Any> consume(
+        topic: Topic<K, V>,
+        onEach: (key: K, value: V?, metadata: ProcessorMetadata) -> Unit,
+    ): ConsumedStream<K, V> {
+        val stream = consumeWithLogging<K, V?>(topic)
+        stream.addProcessor(MetadataProcessor(topic.name)).foreach { _, (kv, metadata) ->
             onEach(kv.key, kv.value, metadata)
         }
-        return ConsumedStream(topic, stream.skipTombstone(topic), nameSupplierFrom(topic))
+        return ConsumedStream(topic.serdes, stream.skipTombstone(topic), nameSupplierFrom(topic))
     }
 
     fun registerInternalTopology(stream: Streams) {
@@ -130,11 +113,11 @@ class Topology internal constructor() {
 
     internal fun buildInternalTopology() = builder.build()
 
-    private fun <T> consumeWithLogging(topic: Topic<T & Any>): KStream<String, T> = consumeWithLogging(topic, "")
+    private fun <K: Any, V> consumeWithLogging(topic: Topic<K, V & Any>): KStream<K, V> = consumeWithLogging(topic, "")
 
-    private fun <T> consumeWithLogging(topic: Topic<T & Any>, namedSuffix: String): KStream<String, T> {
+    private fun <K: Any, V> consumeWithLogging(topic: Topic<K, V & Any>, namedSuffix: String): KStream<K, V> {
         val consumeInternal = topic.consumed("consume-${topic.name}$namedSuffix")
-        val consumeLogger = LogConsumeTopicProcessor<T>(topic, namedSuffix)
+        val consumeLogger = LogConsumeTopicProcessor<K, V>(topic, namedSuffix)
         return builder.stream(topic.name, consumeInternal).addProcessor(consumeLogger)
     }
 }

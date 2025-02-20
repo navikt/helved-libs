@@ -11,38 +11,38 @@ import org.apache.kafka.streams.processor.api.FixedKeyRecord
 import org.apache.kafka.streams.state.TimestampedKeyValueStore
 import kotlin.jvm.optionals.getOrNull
 
-internal interface KStateProcessor<T, U, R> {
+internal interface KStateProcessor<K: Any, V, U, R> {
     fun process(
         metadata: ProcessorMetadata,
-        store: TimestampedKeyValueStore<String, T>,
-        keyValue: KeyValue<String, U>,
+        store: TimestampedKeyValueStore<K, V>,
+        keyValue: KeyValue<K, U>,
     ): R
 }
 
-abstract class StateProcessor<T : Any, U, R>(
+abstract class StateProcessor<K: Any, V : Any, U, R>(
     private val named: String,
-    private val table: KTable<T>,
-) : KStateProcessor<T, U, R> {
+    private val table: KTable<K, V>,
+) : KStateProcessor<K, V, U, R> {
     internal companion object {
-        internal fun <T : Any, U, R> KStream<String, U>.addProcessor(
-            processor: StateProcessor<T, U, R>
-        ): KStream<String, R> = processValues(
-            { processor.run(StateProcessor<T, U, R>::InternalProcessor) },
+        internal fun <K: Any, V : Any, U, R> KStream<K, U>.addProcessor(
+            processor: StateProcessor<K, V, U, R>
+        ): KStream<K, R> = processValues(
+            { processor.run(StateProcessor<K, V, U, R>::InternalProcessor) },
             Named.`as`("stateful-operation-${processor.named}"),
             processor.table.table.stateStoreName,
         )
     }
 
-    private inner class InternalProcessor : FixedKeyProcessor<String, U, R> {
-        private lateinit var context: FixedKeyProcessorContext<String, R>
-        private lateinit var store: TimestampedKeyValueStore<String, T>
+    private inner class InternalProcessor : FixedKeyProcessor<K, U, R> {
+        private lateinit var context: FixedKeyProcessorContext<K, R>
+        private lateinit var store: TimestampedKeyValueStore<K, V>
 
-        override fun init(context: FixedKeyProcessorContext<String, R>) {
+        override fun init(context: FixedKeyProcessorContext<K, R>) {
             this.context = context
             this.store = context.getStateStore(table.table.stateStoreName)
         }
 
-        override fun process(record: FixedKeyRecord<String, U>) {
+        override fun process(record: FixedKeyRecord<K, U>) {
             val recordMeta = requireNotNull(context.recordMetadata().getOrNull()) {
                 "Denne er bare null når man bruker punctuators. Det er feil å bruke denne klassen til punctuation."
             }

@@ -4,6 +4,8 @@ import libs.kafka.Mock
 import libs.kafka.Tables
 import libs.kafka.Topics
 import libs.kafka.produce
+import libs.kafka.JsonSerde
+import libs.kafka.StringSerde
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -129,18 +131,14 @@ internal class BranchedStreamTest {
         val kafka = Mock.withTopology {
             val tableB = consume(Tables.B)
             consume(Topics.A)
-                .joinWith(tableB)
-                .branch({ (left, _) -> left == "lol" }, {
-
-                    map { (left, right) -> left + right }
+                .join(Topics.A, tableB)
+                .branch(JsonSerde.jackson(), { (left, _) -> left == "lol" }, {
+                    map(StringSerde) { (left, right) -> left + right }
                         .produce(Topics.C)
-
                 })
                 .branch({ (_, right) -> right == "lol" }, {
-
-                    map { (_, right) -> right + right }
+                    map(StringSerde) { (_, right) -> right + right }
                         .produce(Topics.D)
-
                 })
         }
 
@@ -161,13 +159,13 @@ internal class BranchedStreamTest {
         val kafka = Mock.withTopology {
             val tableB = consume(Tables.B)
             consume(Topics.A)
-                .joinWith(tableB)
-                .branch({ (left, _) -> left == "lol" }, {
-                    map { (left, right) -> left + right }.produce(Topics.C)
+                .join(Topics.A, tableB)
+                .branch(JsonSerde.jackson(), { (left, _) -> left == "lol" }, {
+                    map(StringSerde) { (left, right) -> left + right }.produce(Topics.C)
 
                 })
                 .default {
-                    map { (_, right) -> right + right }.produce(Topics.D)
+                    map(StringSerde) { (_, right) -> right + right }.produce(Topics.D)
                 }
         }
 
@@ -188,12 +186,12 @@ internal class BranchedStreamTest {
         val kafka = Mock.withTopology {
             val tableB = consume(Tables.B)
             consume(Topics.A)
-                .leftJoinWith(tableB)
-                .branch({ (left, _) -> left == "lol" }, {
-                    map { (left, right) -> left + right }.produce(Topics.C)
+                .leftJoin(Topics.A, tableB)
+                .branch(JsonSerde.jackson(), { (left, _) -> left == "lol" }, {
+                    map(StringSerde) { (left, right) -> left + right }.produce(Topics.C)
                 })
                 .branch({ (_, right) -> right == "lol" }, {
-                    map { (_, right) -> right + right }.produce(Topics.D)
+                    map(StringSerde) { (_, right) -> right + right }.produce(Topics.D)
                 })
         }
 
@@ -214,12 +212,12 @@ internal class BranchedStreamTest {
         val kafka = Mock.withTopology {
             val tableB = consume(Tables.B)
             consume(Topics.A)
-                .leftJoinWith(tableB)
-                .branch({ (left, _) -> left == "lol" }, {
-                    map { (left, right) -> left + right }.produce(Topics.C)
+                .leftJoin(Topics.A, tableB)
+                .branch(JsonSerde.jackson(),{ (left, _) -> left == "lol" }, {
+                    map(StringSerde) { (left, right) -> left + right }.produce(Topics.C)
                 })
                 .default {
-                    map { (_, right) -> right + right }.produce(Topics.D)
+                    map(StringSerde) { (_, right) -> right + right }.produce(Topics.D)
                 }
         }
 

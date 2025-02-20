@@ -14,76 +14,82 @@ import org.apache.kafka.streams.kstream.*
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
-class ConsumedStream<T : Any> internal constructor(
-    private val topic: Topic<T>,
-    private val stream: KStream<String, T>,
-    private val namedSupplier: () -> String
+class ConsumedStream<K: Any, V : Any> internal constructor(
+    private val serdes: Serdes<K, V>,
+    private val stream: KStream<K, V>,
+    private val namedSupplier: () -> String,
+    private val topic: Topic<K, V>? = null,
 ) {
-    fun produce(destination: Topic<T>) {
-        val named = "produced-${destination.name}-${namedSupplier()}"
-        stream.produceWithLogging(destination, named)
+    fun produce(topic: Topic<K, V>) {
+        val named = "produced-${topic.name}-${namedSupplier()}"
+        stream.produceWithLogging(topic, named)
     }
 
-    fun rekey(selectKeyFromValue: (T) -> String): ConsumedStream<T> {
+    fun rekey(selectKeyFromValue: (V) -> K): ConsumedStream<K, V> {
         val rekeyedStream = stream.selectKey { _, value -> selectKeyFromValue(value) }
-        return ConsumedStream(topic, rekeyedStream, namedSupplier)
+        return ConsumedStream(serdes, rekeyedStream, namedSupplier)
     }
 
-    fun filter(lambda: (T) -> Boolean): ConsumedStream<T> {
+    fun filter(lambda: (V) -> Boolean): ConsumedStream<K, V> {
         val filteredStream = stream.filter { _, value -> lambda(value) }
-        return ConsumedStream(topic, filteredStream, namedSupplier)
+        return ConsumedStream(serdes, filteredStream, namedSupplier)
     }
 
-    fun filterKey(lambda: (String) -> Boolean): ConsumedStream<T> {
+    fun filterKey(lambda: (K) -> Boolean): ConsumedStream<K, V> {
         val filteredStream = stream.filter { key, _ -> lambda(key) }
-        return ConsumedStream(topic, filteredStream, namedSupplier)
+        return ConsumedStream(serdes, filteredStream, namedSupplier)
     }
 
-    fun <R : Any> map(mapper: (value: T) -> R): MappedStream<T, R> {
+    fun <U : Any> map(mapper: (value: V) -> U): MappedStream<K, U> {
         val mappedStream = stream.mapValues { value -> mapper(value) }
-        return MappedStream(topic, mappedStream, namedSupplier)
+        return MappedStream(serdes as Serdes<K, U>, mappedStream, namedSupplier)
     }
 
-    fun <R : Any> map(mapper: (key: String, value: T) -> R): MappedStream<T, R> {
+    fun <U : Any> map(serde: StreamSerde<U>, mapper: (value: V) -> U): MappedStream<K, U> {
+        val mappedStream = stream.mapValues { value -> mapper(value) }
+        return MappedStream(Serdes(serdes.key, serde), mappedStream, namedSupplier)
+    }
+
+    fun <U : Any> map(serde: StreamSerde<U>, mapper: (key: K, value: V) -> U): MappedStream<K, U> {
         val mappedStream = stream.mapValues { key, value -> mapper(key, value) }
-        return MappedStream(topic, mappedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), mappedStream, namedSupplier)
     }
 
-    fun <R : Any> mapWithMetadata(mapper: (value: T, metadata: ProcessorMetadata) -> R): MappedStream<T, R> {
+    fun <U : Any> mapWithMetadata(serde: StreamSerde<U>, mapper: (value: V, metadata: ProcessorMetadata) -> U): MappedStream<K, U> {
         val mappedStream = stream
-            .addProcessor(MetadataProcessor(topic))
+            .addProcessor(MetadataProcessor(namedSupplier()))
             .mapValues { (kv, metadata) -> mapper(kv.value, metadata) }
-        return MappedStream(topic, mappedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), mappedStream, namedSupplier)
     }
 
-    fun <R> mapNotNull(mapper: (key: String, value: T) -> R): MappedStream<T, R & Any> {
+    fun <U> mapNotNull(serde: StreamSerde<U & Any>, mapper: (key: K, value: V) -> U): MappedStream<K, U & Any> {
         val valuedStream = stream.mapValues { key, value -> mapper(key, value) }.filterNotNull()
-        return MappedStream(topic, valuedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), valuedStream, namedSupplier)
     }
 
-    fun flatMapPreserveType(mapper: (key: String, value: T) -> Iterable<T>): ConsumedStream<T> {
+    fun flatMapPreserveType(mapper: (key: K, value: V) -> Iterable<V>): ConsumedStream<K, V> {
         val fusedStream = stream.flatMapValues { key, value -> mapper(key, value) }
-        return ConsumedStream(topic, fusedStream, namedSupplier)
+        return ConsumedStream(serdes, fusedStream, namedSupplier)
     }
 
-    fun flatMapKeyAndValuePreserveType(mapper: (key: String, value: T) -> Iterable<KeyValue<String, T>>): ConsumedStream<T> {
+    fun flatMapKeyAndValuePreserveType(mapper: (key: K, value: V) -> Iterable<KeyValue<K, V>>): ConsumedStream<K, V> {
         val fusedStream = stream.flatMap { key, value -> mapper(key, value).map { it.toInternalKeyValue() } }
-        return ConsumedStream(topic, fusedStream, namedSupplier)
+        return ConsumedStream(serdes, fusedStream, namedSupplier)
     }
 
-    fun <R : Any> flatMap(mapper: (key: String, value: T) -> Iterable<R>): MappedStream<T, R> {
+    fun <U : Any> flatMap(serde: StreamSerde<U>, mapper: (key: K, value: V) -> Iterable<U>): MappedStream<K, U> {
         val fusedStream = stream.flatMapValues { key, value -> mapper(key, value) }
-        return MappedStream(topic, fusedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), fusedStream, namedSupplier)
     }
 
-    fun <R : Any> flatMapKeyAndValue(mapper: (key: String, value: T) -> Iterable<KeyValue<String, R>>): MappedStream<T, R> {
+    fun <U : Any> flatMapKeyAndValue(serde: StreamSerde<U>, mapper: (key: K, value: V) -> Iterable<KeyValue<K, U>>): MappedStream<K, U> {
         val fusedStream = stream.flatMap { key, value -> mapper(key, value).map { it.toInternalKeyValue() } }
-        return MappedStream(topic, fusedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), fusedStream, namedSupplier)
     }
 
-    fun <R : Any> mapKeyAndValue(mapper: (key: String, value: T) -> KeyValue<String, R>): MappedStream<T, R> {
+    fun <U : Any> mapKeyAndValue(serde: StreamSerde<U>, mapper: (key: K, value: V) -> KeyValue<K, U>): MappedStream<K, U> {
         val fusedStream = stream.map { key, value -> mapper(key, value).toInternalKeyValue() }
-        return MappedStream(topic, fusedStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), fusedStream, namedSupplier)
     }
 
     /**
@@ -94,16 +100,16 @@ class ConsumedStream<T : Any> internal constructor(
      *  |     <- first record exceeded
      *  ||    <- new record
      */
-    fun slidingWindow(windowSize: Duration): TimeWindowedStream<T> {
+    fun slidingWindow(windowSize: Duration): TimeWindowedStream<K, V> {
         /*
          * TODO: skal noen av vinduene ha gracePeriod?
          * Dvs hvor lenge skal streamen vente på at en melding har et timestamp som passer inn i vinduet.  timestamp enn "nå".
          * Dette vil ta noen out-of-order records som oppstår f.eks dersom klokkene til producerne er ulike
          */
         val sliding = SlidingWindows.ofTimeDifferenceWithNoGrace(windowSize.toJavaDuration())
-        val groupSerde = Grouped.with(topic.keySerde, topic.valueSerde)
+        val groupSerde = Grouped.with(serdes.key, serdes.value)
         val windowedStream = stream.groupByKey(groupSerde).windowedBy(sliding)
-        return TimeWindowedStream(topic, windowedStream, namedSupplier)
+        return TimeWindowedStream(serdes, windowedStream, namedSupplier)
     }
 
     /**
@@ -113,14 +119,14 @@ class ConsumedStream<T : Any> internal constructor(
      *             |||||||||||||
      *                        |||||||||||||
      */
-    fun hoppingWindow(windowSize: Duration, advanceSize: Duration): TimeWindowedStream<T> {
+    fun hoppingWindow(windowSize: Duration, advanceSize: Duration): TimeWindowedStream<K, V> {
         val window = TimeWindows
             .ofSizeWithNoGrace(windowSize.toJavaDuration())
             .advanceBy(advanceSize.toJavaDuration())
 
-        val groupSerde = Grouped.with(topic.keySerde, topic.valueSerde)
+        val groupSerde = Grouped.with(serdes.key, serdes.value)
         val windowedStream = stream.groupByKey(groupSerde).windowedBy(window)
-        return TimeWindowedStream(topic, windowedStream, namedSupplier)
+        return TimeWindowedStream(serdes, windowedStream, namedSupplier)
     }
 
     /**
@@ -130,11 +136,11 @@ class ConsumedStream<T : Any> internal constructor(
      *               |||||||||||||
      *                            |||||||||||||
      */
-    fun tumblingWindow(windowSize: Duration): TimeWindowedStream<T> {
+    fun tumblingWindow(windowSize: Duration): TimeWindowedStream<K, V> {
         val window = TimeWindows.ofSizeWithNoGrace(windowSize.toJavaDuration())
-        val groupSerde = Grouped.with(topic.keySerde, topic.valueSerde)
+        val groupSerde = Grouped.with(serdes.key, serdes.value)
         val windowedStream = stream.groupByKey(groupSerde).windowedBy(window)
-        return TimeWindowedStream(topic, windowedStream, namedSupplier)
+        return TimeWindowedStream(serdes, windowedStream, namedSupplier)
     }
 
     /**
@@ -143,64 +149,65 @@ class ConsumedStream<T : Any> internal constructor(
      *               ||||||||
      *                           |||||||||||||
      */
-    fun sessionWindow(inactivityGap: Duration): SessionWindowedStream<T> {
+    fun sessionWindow(inactivityGap: Duration): SessionWindowedStream<K, V> {
         val window = SessionWindows.ofInactivityGapWithNoGrace(inactivityGap.toJavaDuration())
-        val groupSerde = Grouped.with(topic.keySerde, topic.valueSerde)
-        val windowedStream: SessionWindowedKStream<String, T> = stream.groupByKey(groupSerde).windowedBy(window)
-        return SessionWindowedStream(topic, windowedStream, namedSupplier)
+        val groupSerde = Grouped.with(serdes.key, serdes.value)
+        val windowedStream: SessionWindowedKStream<K, V> = stream.groupByKey(groupSerde).windowedBy(window)
+        return SessionWindowedStream(serdes, windowedStream, namedSupplier)
     }
 
-    fun <U : Any> joinWith(ktable: KTable<U>): JoinedStream<T, T, U> {
-        val joinedStream = stream.join(topic, ktable, ::StreamsPair)
-        val named = { "${topic.name}-join-${ktable.table.sourceTopic.name}" }
-        return JoinedStream(topic, joinedStream, named)
+    fun <R : Any> join(left: Topic<K, V>, right: KTable<K, R>): JoinedStream<K, V, R> {
+        val joinedStream = stream.join(left, right, ::StreamsPair)
+        val named = { "${left.name}-join-${right.table.sourceTopic.name}" }
+        return JoinedStream(left.serdes, joinedStream, named)
     }
 
-    fun <U : Any> leftJoinWith(ktable: KTable<U>): JoinedStream<T, T, U?> {
-        val joinedStream = stream.leftJoin(topic, ktable, ::StreamsPair)
-        val named = { "${topic.name}-left-join-${ktable.table.sourceTopic.name}" }
-        return JoinedStream(topic, joinedStream, named)
+    // should not be necessary to provide topic (left) if join is allowed
+    fun <R : Any> leftJoin(left: Topic<K, V>, right: KTable<K, R>): JoinedStream<K, V, R?> {
+        val named = { "${left.name}-left-join-${right.table.sourceTopic.name}" }
+        val joinedStream = stream.leftJoin(left, right, ::StreamsPair)
+        return JoinedStream(left.serdes, joinedStream, named)
     }
 
-    fun branch(predicate: (T) -> Boolean, consumed: ConsumedStream<T>.() -> Unit): BranchedKStream<T> {
+    fun branch(predicate: (V) -> Boolean, consumed: ConsumedStream<K, V>.() -> Unit): BranchedKStream<K, V> {
         val splittedStream = stream.split(Named.`as`("split-${namedSupplier()}"))
-        return BranchedKStream(topic, splittedStream, namedSupplier).branch(predicate, consumed)
+        return BranchedKStream(serdes, splittedStream, namedSupplier).branch(predicate, consumed)
     }
 
-    fun secureLog(log: Log.(value: T) -> Unit): ConsumedStream<T> {
+    fun secureLog(log: Log.(value: V) -> Unit): ConsumedStream<K, V> {
         val loggedStream = stream.peek { _, value -> log.invoke(Log.secure, value) }
-        return ConsumedStream(topic, loggedStream, namedSupplier)
+        return ConsumedStream(serdes, loggedStream, namedSupplier)
     }
 
-    fun secureLogWithKey(log: Log.(key: String, value: T) -> Unit): ConsumedStream<T> {
+    fun secureLogWithKey(log: Log.(key: K, value: V) -> Unit): ConsumedStream<K, V> {
         val loggedStream = stream.peek { key, value -> log.invoke(Log.secure, key, value) }
-        return ConsumedStream(topic, loggedStream, namedSupplier)
+        return ConsumedStream(serdes, loggedStream, namedSupplier)
     }
 
-    fun repartition(partitions: Int): ConsumedStream<T> {
+    fun repartition(partitions: Int): ConsumedStream<K, V> {
         val repartition = Repartitioned
-            .with(topic.keySerde, topic.valueSerde)
+            .with(serdes.key, serdes.value)
             .withNumberOfPartitions(partitions)
-            .withName(topic.name)
-        return ConsumedStream(topic, stream.repartition(repartition), namedSupplier)
+            .withName(topic?.name ?: namedSupplier())
+        return ConsumedStream(serdes, stream.repartition(repartition), namedSupplier)
     }
 
-    fun <U : Any> processor(processor: Processor<T, U>): MappedStream<T, U> {
+    fun <U : Any> processor(serde: StreamSerde<U>, processor: Processor<K, V, U>): MappedStream<K, U> {
         val processorStream = stream.addProcessor(processor)
-        return MappedStream(topic, processorStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), processorStream, namedSupplier)
     }
 
-    fun processor(processor: Processor<T, T>): ConsumedStream<T> {
+    fun processor(processor: Processor<K, V, V>): ConsumedStream<K, V> {
         val processorStream = stream.addProcessor(processor)
-        return ConsumedStream(topic, processorStream, namedSupplier)
+        return ConsumedStream(serdes, processorStream, namedSupplier)
     }
 
-    fun <TABLE : Any, U : Any> processor(processor: StateProcessor<TABLE, T, U>): MappedStream<T, U> {
+    fun <TABLE : Any, U : Any> processor(serde: StreamSerde<U>, processor: StateProcessor<K, TABLE, V, U>): MappedStream<K, U> {
         val processorStream = stream.addProcessor(processor)
-        return MappedStream(topic, processorStream, namedSupplier)
+        return MappedStream(Serdes(serdes.key, serde), processorStream, namedSupplier)
     }
 
-    fun forEach(mapper: (key: String, value: T) -> Unit) {
+    fun forEach(mapper: (key: K, value: V) -> Unit) {
         val named = Named.`as`("foreach-${namedSupplier()}")
         stream.foreach(mapper, named)
     }

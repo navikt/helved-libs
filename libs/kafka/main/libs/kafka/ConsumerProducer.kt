@@ -10,30 +10,30 @@ import org.apache.kafka.clients.producer.ProducerConfig
 import java.util.*
 
 interface ProducerFactory {
-    fun <V : Any> createProducer(
+    fun <K: Any, V : Any> createProducer(
         streamsConfig: StreamsConfig,
-        topic: Topic<V>,
-    ): Producer<String, V> {
+        topic: Topic<K, V>,
+    ): Producer<K, V> {
         val producerConfig = ProducerFactoryConfig(
             streamsConfig = streamsConfig,
             clientId = "${streamsConfig.applicationId}-producer-${topic.name}",
         )
         return KafkaProducer(
             producerConfig.toProperties(),
-            topic.keySerde.serializer(),
-            topic.valueSerde.serializer(),
+            topic.serdes.key.serializer(),
+            topic.serdes.value.serializer(),
         )
     }
 }
 
 interface ConsumerFactory {
-    fun <V : Any> createConsumer(
+    fun <K: Any, V : Any> createConsumer(
         streamsConfig: StreamsConfig,
-        topic: Topic<V>,
+        topic: Topic<K, V>,
         maxEstimatedProcessingTimeMs: Long, // e.g. 4_000
         groupIdSuffix: Int = 1, // used to "reset" the consumer by registering a new
         offsetResetPolicy: OffsetResetPolicy = OffsetResetPolicy.earliest
-    ): Consumer<String, V> {
+    ): Consumer<K, V> {
         val consumerConfig = ConsumerFactoryConfig(
             streamsConfig = streamsConfig,
             clientId = "${streamsConfig.applicationId}-consumer-${topic.name}",
@@ -44,8 +44,8 @@ interface ConsumerFactory {
 
         return KafkaConsumer(
             consumerConfig.toProperties(),
-            topic.keySerde.deserializer(),
-            topic.valueSerde.deserializer()
+            topic.serdes.key.deserializer(),
+            topic.serdes.value.deserializer()
         )
     }
 }

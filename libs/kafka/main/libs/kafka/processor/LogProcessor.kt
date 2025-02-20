@@ -1,8 +1,6 @@
 package libs.kafka.processor
 
-import libs.kafka.KeyValue
-import libs.kafka.Topic
-import libs.kafka.Table
+import libs.kafka.*
 import libs.utils.secureLog
 import net.logstash.logback.argument.StructuredArguments.kv
 import org.slf4j.Logger
@@ -10,12 +8,12 @@ import org.slf4j.LoggerFactory
 
 private val log: Logger = LoggerFactory.getLogger("kafka")
 
-internal class LogConsumeTopicProcessor<T>(
-    private val topic: Topic<T & Any>,
+internal class LogConsumeTopicProcessor<K: Any, V>(
+    private val topic: Topic<K, V & Any>,
     namedSuffix: String = "",
-) : Processor<T, T>("log-consume-${topic.name}$namedSuffix") {
+) : Processor<K, V, V>("log-consume-${topic.name}$namedSuffix") {
 
-    override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, T>): T {
+    override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         log.trace(
             "consume ${metadata.topic}",
             kv("key", keyValue.key),
@@ -23,26 +21,25 @@ internal class LogConsumeTopicProcessor<T>(
             kv("partition", metadata.partition),
             kv("offset", metadata.offset),
         )
-        if (topic.logValues) {
-            secureLog.trace(
-                "consume ${metadata.topic}",
-                kv("key", keyValue.key),
-                kv("topic", metadata.topic),
-                kv("partition", metadata.partition),
-                kv("offset", metadata.offset),
-                kv("value", keyValue.value),
-            )
-        }
+
+        secureLog.trace(
+            "consume ${metadata.topic}",
+            kv("key", keyValue.key),
+            kv("topic", metadata.topic),
+            kv("partition", metadata.partition),
+            kv("offset", metadata.offset),
+            kv("value", keyValue.value),
+        )
 
         return keyValue.value
     }
 }
 
-internal class LogProduceTableProcessor<T>(
-    private val table: Table<T & Any>,
-) : Processor<T, T>("log-produced-${table.sourceTopicName}") {
+internal class LogProduceTableProcessor<K: Any, V>(
+    private val table: Table<K, V & Any>,
+) : Processor<K, V, V>("log-produced-${table.sourceTopicName}") {
 
-    override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, T>): T {
+    override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         when (keyValue.value) {
             null -> log.trace(
                 "materialize tombsone ${table.sourceTopicName}",
@@ -60,28 +57,26 @@ internal class LogProduceTableProcessor<T>(
                     kv("store", table.stateStoreName),
                     kv("partition", metadata.partition),
                 )
-                if (table.sourceTopic.logValues) {
-                    secureLog.trace(
-                        "materialize ${table.sourceTopicName}",
-                        kv("key", keyValue.key),
-                        kv("table", table.sourceTopicName),
-                        kv("store", table.stateStoreName),
-                        kv("partition", metadata.partition),
-                        kv("value", keyValue.value),
-                    )
-                }
+                secureLog.trace(
+                    "materialize ${table.sourceTopicName}",
+                    kv("key", keyValue.key),
+                    kv("table", table.sourceTopicName),
+                    kv("store", table.stateStoreName),
+                    kv("partition", metadata.partition),
+                    kv("value", keyValue.value),
+                )
             }
         }
         return keyValue.value
     }
 }
 
-internal class LogProduceTopicProcessor<T> internal constructor(
+internal class LogProduceTopicProcessor<K: Any, V> internal constructor(
     named: String,
-    private val topic: Topic<T & Any>,
-) : Processor<T, T>(named) {
+    private val topic: Topic<K, V & Any>,
+) : Processor<K, V, V>(named) {
 
-    override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, T>): T {
+    override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         log.trace(
             "produce ${topic.name}",
             kv("key", keyValue.key),
@@ -89,16 +84,14 @@ internal class LogProduceTopicProcessor<T> internal constructor(
             kv("topic", topic.name),
             kv("partition", metadata.partition),
         )
-        if (topic.logValues) {
-            secureLog.trace(
-                "produce ${topic.name}",
-                kv("key", keyValue.key),
-                kv("source_topic", metadata.topic),
-                kv("topic", topic.name),
-                kv("partition", metadata.partition),
-                kv("value", keyValue.value),
-            )
-        }
+        secureLog.trace(
+            "produce ${topic.name}",
+            kv("key", keyValue.key),
+            kv("source_topic", metadata.topic),
+            kv("topic", topic.name),
+            kv("partition", metadata.partition),
+            kv("value", keyValue.value),
+        )
         return keyValue.value
     }
 }

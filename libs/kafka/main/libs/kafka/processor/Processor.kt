@@ -1,35 +1,31 @@
 package libs.kafka.processor
 
-import libs.kafka.KeyValue
-import libs.kafka.Topic
-import org.apache.kafka.streams.kstream.KStream
-import org.apache.kafka.streams.kstream.Named
-import org.apache.kafka.streams.processor.api.FixedKeyProcessor
-import org.apache.kafka.streams.processor.api.FixedKeyProcessorContext
-import org.apache.kafka.streams.processor.api.FixedKeyRecord
 import kotlin.jvm.optionals.getOrNull
+import libs.kafka.*
+import org.apache.kafka.streams.kstream.*
+import org.apache.kafka.streams.processor.api.*
 
-internal interface KProcessor<T, U> {
-    fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, T>): U
+internal interface KProcessor<K, V, U> {
+    fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): U
 }
 
-abstract class Processor<T, U>(private val named: String) : KProcessor<T, U> {
+abstract class Processor<K: Any, V, U>(private val named: String) : KProcessor<K, V, U> {
     internal companion object {
-        internal fun <T, U> KStream<String, T>.addProcessor(processor: Processor<T, U>): KStream<String, U> =
+        internal fun <K: Any, V, U> KStream<K, V>.addProcessor(processor: Processor<K, V, U>): KStream<K, U> =
             processValues(
                 { processor.run { InternalProcessor() } },
                 Named.`as`("stateless-operation-${processor.named}"),
             )
     }
 
-    private inner class InternalProcessor : FixedKeyProcessor<String, T, U> {
-        private lateinit var context: FixedKeyProcessorContext<String, U>
+    private inner class InternalProcessor : FixedKeyProcessor<K, V, U> {
+        private lateinit var context: FixedKeyProcessorContext<K, U>
 
-        override fun init(context: FixedKeyProcessorContext<String, U>) {
+        override fun init(context: FixedKeyProcessorContext<K, U>) {
             this.context = context
         }
 
-        override fun process(record: FixedKeyRecord<String, T>) {
+        override fun process(record: FixedKeyRecord<K, V>) {
             val recordMeta = requireNotNull(context.recordMetadata().getOrNull()) {
                 "Denne er bare null når man bruker punctuators. Det er feil å bruke denne klassen til punctuation."
             }
@@ -79,15 +75,15 @@ data class ProcessorMetadata(
 //        keyValue to metadata
 //}
 
-internal class MetadataProcessor<T>(
-    topic: Topic<T & Any>,
-) : Processor<T, Pair<KeyValue<String, T>, ProcessorMetadata>>(
-    "from-${topic.name}-enrich-metadata",
+internal class MetadataProcessor<K: Any, V>(
+    named: String, // e.g. topic-name
+) : Processor<K, V, Pair<KeyValue<K, V>, ProcessorMetadata>>(
+    "from-$named-enrich-metadata",
 ) {
     override fun process(
         metadata: ProcessorMetadata,
-        keyValue: KeyValue<String, T>,
-    ): Pair<KeyValue<String, T>, ProcessorMetadata> {
+        keyValue: KeyValue<K, V>,
+    ): Pair<KeyValue<K, V>, ProcessorMetadata> {
         return keyValue to metadata 
     } 
 }

@@ -29,8 +29,8 @@ class KTableTest {
             consume(Tables.B)
                 .toStream()
                 .filter { it != "humbug" }
-                .joinWith(consume(Tables.C))
-                .map { a, b -> b + a }
+                .join(Topics.B, consume(Tables.C))
+                .map(StringSerde) { a, b -> b + a }
                 .produce(Topics.D)
         }
 
