@@ -62,9 +62,6 @@ internal class Mock : Streams {
     internal fun advanceWallClockTime(duration: Duration) =
         internalStreams.advanceWallClockTime(duration.toJavaDuration())
 
-    internal fun <T : Any> getTimestampedKeyValueStore(table: Table<T>) =
-        internalStreams.getTimestampedKeyValueStore<String, T>(table.stateStoreName)
-
     override fun ready(): Boolean = true
     override fun live(): Boolean = true
     override fun visulize(): TopologyVisulizer = TopologyVisulizer(internalTopology)

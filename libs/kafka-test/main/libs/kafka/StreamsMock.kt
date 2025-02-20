@@ -7,6 +7,8 @@ import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.clients.producer.MockProducer
 import org.apache.kafka.streams.StreamsConfig.*
+import org.apache.kafka.streams.state.QueryableStoreTypes
+import org.apache.kafka.streams.StoreQueryParameters
 import org.apache.kafka.streams.TopologyTestDriver
 
 class StreamsMock : Streams {
@@ -36,15 +38,13 @@ class StreamsMock : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <T : Any> getStore(table: Table<T>): StateStore<T> {
-        val internalStateStore = internalStreams.getTimestampedKeyValueStore<String, T>(table.stateStoreName)
-        return StateStore(internalStateStore)
-    }
+    override fun <T : Any> getStore(table: Table<T>): StateStore<T> = StateStore(
+        internalStreams.getKeyValueStore(table.stateStoreName)
+    )
 
-    override fun <T : Any> getStore(name: StateStoreName): StateStore<T> {
-        val internalStateStore = internalStreams.getTimestampedKeyValueStore<String, T>(name)
-        return StateStore(internalStateStore)
-    }
+    override fun <T : Any> getStore(name: StateStoreName): StateStore<T> = StateStore(
+        internalStreams.getKeyValueStore(name)
+    )
 
     fun <V : Any> testTopic(topic: Topic<V>): TestTopic<V> =
         TestTopic(
