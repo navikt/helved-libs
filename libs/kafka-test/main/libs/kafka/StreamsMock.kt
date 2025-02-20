@@ -38,52 +38,48 @@ class StreamsMock : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <T : Any> getStore(table: Table<T>): StateStore<T> = StateStore(
-        internalStreams.getKeyValueStore(table.stateStoreName)
-    )
-
-    override fun <T : Any> getStore(name: StateStoreName): StateStore<T> = StateStore(
+    override fun <K: Any, V : Any> getStore(name: StateStoreName): StateStore<K, V> = StateStore(
         internalStreams.getKeyValueStore(name)
     )
 
-    fun <V : Any> testTopic(topic: Topic<V>): TestTopic<V> =
+    fun <K: Any, V : Any> testTopic(topic: Topic<K, V>): TestTopic<K, V> =
         TestTopic(
             input = internalStreams.createInputTopic(
                 topic.name,
-                topic.keySerde.serializer(),
-                topic.valueSerde.serializer()
+                topic.serdes.key.serializer(),
+                topic.serdes.value.serializer()
             ),
             output = internalStreams.createOutputTopic(
                 topic.name,
-                topic.keySerde.deserializer(),
-                topic.valueSerde.deserializer()
+                topic.serdes.key.deserializer(),
+                topic.serdes.value.deserializer()
             )
         )
 
-    private val producers = mutableMapOf<Topic<*>, MockProducer<String, *>>()
+    private val producers = mutableMapOf<Topic<*, *>, MockProducer<*, *>>()
 
     @Suppress("UNCHECKED_CAST")
-    override fun <V : Any> createProducer(
+    override fun <K: Any, V : Any> createProducer(
         streamsConfig: StreamsConfig,
-        topic: Topic<V>,
-    ): MockProducer<String, V> {
+        topic: Topic<K, V>,
+    ): MockProducer<K, V> {
         return producers.getOrPut(topic) {
-            MockProducer(true, topic.keySerde.serializer(), topic.valueSerde.serializer())
-        } as MockProducer<String, V>
+            MockProducer(true, topic.serdes.key.serializer(), topic.serdes.value.serializer())
+        } as MockProducer<K, V>
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun <V : Any> getProducer(topic: Topic<V>): MockProducer<String, V> {
-        return producers[topic] as MockProducer<String, V>
+    fun <K: Any, V : Any> getProducer(topic: Topic<K, V>): MockProducer<K, V> {
+        return producers[topic] as MockProducer<K, V>
     }
 
-    override fun <V : Any> createConsumer(
+    override fun <K: Any, V : Any> createConsumer(
         streamsConfig: StreamsConfig,
-        topic: Topic<V>,
+        topic: Topic<K, V>,
         maxEstimatedProcessingTimeMs: Long,
         groupIdSuffix: Int,
         offsetResetPolicy: OffsetResetPolicy
-    ): Consumer<String, V> {
+    ): Consumer<K, V> {
         val resetPolicy = enumValueOf<OffsetResetStrategy>(offsetResetPolicy.name.uppercase())
         return MockConsumer(resetPolicy)
     }
