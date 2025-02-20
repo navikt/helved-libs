@@ -31,7 +31,7 @@ internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.leftJoin(
     ktable: KTable<K, R>,
     joiner: (L, R?) -> LR,
 ): KStream<K, LR> {
-    val joined = Joined.with(leftSerdes.key, leftSerdes.value, ktable.serdes.value, named)
+    val joined = Joined.with(leftSerdes.key, leftSerdes.value, ktable.table.serdes.value, named)
     return leftJoin(ktable.internalKTable, joiner, joined)
 }
 
@@ -72,14 +72,14 @@ internal fun <K: Any, L : Any, R : Any, LR> KStream<K, L>.join(
     return join(ktable, joiner, joined)
 }
 
-internal fun <K: Any, V : Any> KStream<K, V?>.toKTable(serdes: Serdes<K, V>, table: Table<K, V>): KTable<K, V> {
+internal fun <K: Any, V : Any> KStream<K, V?>.toKTable(table: Table<K, V>): KTable<K, V> {
     val internalKTable = addProcessor(LogProduceTableProcessor(table))
         .toTable(
             Named.`as`("${table.sourceTopicName}-to-table"),
             materialized(table)
         )
 
-    return KTable(table, serdes, internalKTable)
+    return KTable(table, internalKTable)
 }
 
 internal fun <K: Any, V> repartitioned(table: Table<K, V & Any>, partitions: Int): Repartitioned<K, V> {

@@ -15,7 +15,7 @@ internal class MappedStreamTest {
             consume(Topics.A)
                 .join(Topics.A, table)
                 .filter { (a, _) -> a == "sauce" }
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -41,7 +41,7 @@ internal class MappedStreamTest {
             consume(Topics.A)
                 .leftJoin(Topics.A, table)
                 .filter { (a, _) -> a == "sauce" }
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -66,7 +66,7 @@ internal class MappedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .join(Topics.A, table)
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -89,7 +89,7 @@ internal class MappedStreamTest {
     fun `mapNotNull a branched stream`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .mapNotNull(StringSerde) { key, value -> if (key == "1") null else value }
+                .mapNotNull { key, value -> if (key == "1") null else value }
                 .produce(Topics.C)
         }
 
@@ -110,7 +110,7 @@ internal class MappedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .leftJoin(Topics.A, table)
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -135,7 +135,7 @@ internal class MappedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .leftJoin(Topics.A, table)
-                .mapKeyValue(Serdes(StringSerde, StringSerde)) { key, left, right -> KeyValue("$key$key", right + left) }
+                .mapKeyValue { key, left, right -> KeyValue("$key$key", right + left) }
                 .produce(Topics.C)
         }
 
@@ -177,7 +177,7 @@ internal class MappedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .map { v -> v }
-                .processor(StringSerde, CustomProcessorWithTable(table))
+                .stateProcessor(StringSerde, CustomProcessorWithTable(table))
                 .produce(Topics.C)
         }
 
@@ -195,7 +195,7 @@ internal class MappedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .map { v -> "${v}alue" }
-                .rekey(StringSerde) { v -> v }
+                .rekey { v -> v }
                 .produce(Topics.C)
         }
 
@@ -230,7 +230,7 @@ internal class MappedStreamTest {
     fun `rekey with mapKeyValue`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .mapKeyAndValue(StringSerde) { key, value -> KeyValue(key = "test:$key", value = "$value$value") }
+                .mapKeyAndValue { key, value -> KeyValue(key = "test:$key", value = "$value$value") }
                 .produce(Topics.C)
         }
 
@@ -251,9 +251,9 @@ internal class MappedStreamTest {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.E)
-                .map(JsonSerde.jackson()) { it -> ChangedDto(9, it.data) }
+                .map { it -> ChangedDto(9, it.data) }
                 .leftJoin(table)
-                .map(JsonSerde.jackson()) { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
+                .map { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
                 .produce(Topics.C)
         }
 

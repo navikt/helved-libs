@@ -15,7 +15,7 @@ class MermaidTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .join(Topics.A, table)
-                .map(StringSerde) { l, r -> r + l }
+                .map { l, r -> r + l }
                 .produce(Topics.C)
 
             consume(Topics.D)

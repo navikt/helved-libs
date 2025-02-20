@@ -14,7 +14,6 @@ data class Table<K: Any, V: Any>(
 
 class KTable<K: Any, V : Any>(
     val table: Table<K, V>,
-    val serdes: Serdes<K, V> = table.serdes,
     val internalKTable: KTable<K, V?>,
 ) {
     internal val tombstonedInternalKTable: KTable<K, V> by lazy {
@@ -23,7 +22,7 @@ class KTable<K: Any, V : Any>(
 
     fun toStream(): ConsumedStream<K, V> {
         return ConsumedStream(
-            serdes,
+            table.serdes,
             internalKTable.toStream().skipTombstone(table.sourceTopic, "to-stream"),
             { "consume-${table.stateStoreName}" })
     }

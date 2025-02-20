@@ -17,7 +17,7 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .join(Topics.A, consume(Tables.B))
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -36,7 +36,7 @@ internal class JoinedStreamTest {
             consume(Topics.A)
                 .filter { it != "humbug" }
                 .join(Topics.A, consume(Tables.B))
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -61,7 +61,7 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .leftJoin(Topics.A, consume(Tables.B))
-                .map(StringSerde) { a, b -> a + b }
+                .map { a, b -> a + b }
                 .produce(Topics.B)
         }
 
@@ -84,7 +84,7 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .leftJoin(Topics.A, consume(Tables.B))
-                .map(StringSerde) { left, _ -> left }
+                .map { left, _ -> left }
                 .produce(Topics.C)
         }
 
@@ -101,7 +101,7 @@ internal class JoinedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .leftJoin(Topics.A, consume(Tables.B))
-                .map(StringSerde) { left, right -> right ?: left }
+                .map { left, right -> right ?: left }
                 .produce(Topics.C)
         }
 
@@ -118,7 +118,7 @@ internal class JoinedStreamTest {
             consume(Topics.A)
                 .filter { it != "humbug" }
                 .leftJoin(Topics.A, consume(Tables.B))
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .produce(Topics.C)
         }
 
@@ -144,7 +144,7 @@ internal class JoinedStreamTest {
             consume(Topics.A)
                 .filter { it != "humbug" }
                 .leftJoin(Topics.A, consume(Tables.B))
-                .map(StringSerde) { a, b -> (b ?: "") + a }
+                .map { a, b -> (b ?: "") + a }
                 .produce(Topics.C)
         }
 
@@ -166,7 +166,7 @@ internal class JoinedStreamTest {
             consume(Topics.A)
                 .filter { it != "humbug" }
                 .join(Topics.A, consume(Tables.B))
-                .flatMapKeyValue(Serdes(StringSerde, StringSerde)) { s, a, b -> listOf(KeyValue(s, a), KeyValue(s, b)) }
+                .flatMapKeyValue { s, a, b -> listOf(KeyValue(s, a), KeyValue(s, b)) }
                 .produce(Topics.C)
         }
 
@@ -208,7 +208,7 @@ internal class JoinedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .join(Topics.A, table)
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .filter { it == "niceprice" }
                 .produce(Topics.C)
         }
@@ -234,8 +234,8 @@ internal class JoinedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .join(Topics.A, table)
-                .rekey(StringSerde) { a, b -> b + a }
-                .map(StringSerde) { a, _ -> a }
+                .rekey { a, b -> b + a }
+                .map { a, _ -> a }
                 .produce(Topics.C)
         }
 

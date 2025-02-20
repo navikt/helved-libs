@@ -71,10 +71,10 @@ class Topology internal constructor() {
 
     fun <K: Any, V : Any> consume(table: Table<K, V>): KTable<K, V> {
         val stream = consumeWithLogging<K, V?>(table.sourceTopic)
-        return stream.toKTable(table.serdes, table)
+        return stream.toKTable(table)
     }
 
-    fun <K: Any, V : Any> consumeRepartitioned(serdes: Serdes<K, V>, table: Table<K, V>, partitions: Int): KTable<K, V> {
+    fun <K: Any, V : Any> consumeRepartitioned(table: Table<K, V>, partitions: Int): KTable<K, V> {
         val internalKTable = consumeWithLogging<K, V?>(table.sourceTopic)
             .repartition(repartitioned(table, partitions))
             .addProcessor(LogProduceTableProcessor(table))
@@ -83,7 +83,7 @@ class Topology internal constructor() {
                 materialized(table)
             )
 
-        return KTable(table, serdes, internalKTable)
+        return KTable(table, internalKTable)
     }
 
     /**

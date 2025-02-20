@@ -30,7 +30,7 @@ class KTableTest {
                 .toStream()
                 .filter { it != "humbug" }
                 .join(Topics.B, consume(Tables.C))
-                .map(StringSerde) { a, b -> b + a }
+                .map { a, b -> b + a }
                 .produce(Topics.D)
         }
 

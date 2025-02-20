@@ -132,12 +132,12 @@ internal class BranchedStreamTest {
             val tableB = consume(Tables.B)
             consume(Topics.A)
                 .join(Topics.A, tableB)
-                .branch(JsonSerde.jackson(), { (left, _) -> left == "lol" }, {
-                    map(StringSerde) { (left, right) -> left + right }
+                .branch({ (left, _) -> left == "lol" }, {
+                    map { (left, right) -> left + right }
                         .produce(Topics.C)
                 })
                 .branch({ (_, right) -> right == "lol" }, {
-                    map(StringSerde) { (_, right) -> right + right }
+                    map { (_, right) -> right + right }
                         .produce(Topics.D)
                 })
         }
@@ -160,12 +160,12 @@ internal class BranchedStreamTest {
             val tableB = consume(Tables.B)
             consume(Topics.A)
                 .join(Topics.A, tableB)
-                .branch(JsonSerde.jackson(), { (left, _) -> left == "lol" }, {
-                    map(StringSerde) { (left, right) -> left + right }.produce(Topics.C)
+                .branch({ (left, _) -> left == "lol" }, {
+                    map { (left, right) -> left + right }.produce(Topics.C)
 
                 })
                 .default {
-                    map(StringSerde) { (_, right) -> right + right }.produce(Topics.D)
+                    map { (_, right) -> right + right }.produce(Topics.D)
                 }
         }
 
@@ -187,11 +187,11 @@ internal class BranchedStreamTest {
             val tableB = consume(Tables.B)
             consume(Topics.A)
                 .leftJoin(Topics.A, tableB)
-                .branch(JsonSerde.jackson(), { (left, _) -> left == "lol" }, {
-                    map(StringSerde) { (left, right) -> left + right }.produce(Topics.C)
+                .branch({ (left, _) -> left == "lol" }, {
+                    map { (left, right) -> left + right }.produce(Topics.C)
                 })
                 .branch({ (_, right) -> right == "lol" }, {
-                    map(StringSerde) { (_, right) -> right + right }.produce(Topics.D)
+                    map { (_, right) -> right + right }.produce(Topics.D)
                 })
         }
 
@@ -213,11 +213,11 @@ internal class BranchedStreamTest {
             val tableB = consume(Tables.B)
             consume(Topics.A)
                 .leftJoin(Topics.A, tableB)
-                .branch(JsonSerde.jackson(),{ (left, _) -> left == "lol" }, {
-                    map(StringSerde) { (left, right) -> left + right }.produce(Topics.C)
+                .branch({ (left, _) -> left == "lol" }, {
+                    map { (left, right) -> left + right }.produce(Topics.C)
                 })
                 .default {
-                    map(StringSerde) { (_, right) -> right + right }.produce(Topics.D)
+                    map { (_, right) -> right + right }.produce(Topics.D)
                 }
         }
 
