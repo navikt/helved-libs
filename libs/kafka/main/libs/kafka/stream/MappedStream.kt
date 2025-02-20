@@ -18,6 +18,12 @@ class MappedStream<S: Any, T : Any> internal constructor(
         stream.produceWithLogging(topic, named)
     }
 
+    fun materialize(serde: StreamSerde<T>): StateStoreName {
+        val stateStoreName: StateStoreName = "${namedSupplier()}-to-table" 
+        stream.toTable(materialized(stateStoreName, serde))
+        return stateStoreName
+    }
+
     fun <R : Any> map(mapper: (T) -> R): MappedStream<S, R> {
         val mappedStream = stream.mapValues { lr -> mapper(lr) }
         return MappedStream(topic, mappedStream, namedSupplier)

@@ -97,6 +97,16 @@ internal fun <T> repartitioned(table: Table<T & Any>, partitions: Int): Repartit
         .withName(table.sourceTopicName)
 }
 
+internal fun <T : Any> materialized(
+    stateStoreName: String,
+    valueSerde: StreamSerde<T>, 
+    keySerde: StreamSerde<String> = StringSerde, 
+): Materialized<String, T?, KeyValueStore<Bytes, ByteArray>> {
+    return Materialized.`as`<String, T, KeyValueStore<Bytes, ByteArray>>(stateStoreName)
+        .withKeySerde(keySerde)
+        .withValueSerde(valueSerde)
+}
+
 internal fun <T : Any> materialized(table: Table<T>): Materialized<String, T?, KeyValueStore<Bytes, ByteArray>> {
     return Materialized.`as`<String, T, KeyValueStore<Bytes, ByteArray>>(table.stateStoreName)
         .withKeySerde(table.sourceTopic.keySerde)

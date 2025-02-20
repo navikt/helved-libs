@@ -41,6 +41,11 @@ class StreamsMock : Streams {
         return StateStore(internalStateStore)
     }
 
+    override fun <T : Any> getStore(name: StateStoreName): StateStore<T> {
+        val internalStateStore = internalStreams.getTimestampedKeyValueStore<String, T>(name)
+        return StateStore(internalStateStore)
+    }
+
     fun <V : Any> testTopic(topic: Topic<V>): TestTopic<V> =
         TestTopic(
             input = internalStreams.createInputTopic(

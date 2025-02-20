@@ -28,7 +28,7 @@ abstract class StateInitProcessor<T>(
     }
 
     private inner class InternalProcessor : FixedKeyProcessor<String, T?, T> {
-        private lateinit var store: ReadOnlyKeyValueStore<String, ValueAndTimestamp<T>>
+        private lateinit var store: ReadOnlyKeyValueStore<String, T>
 
         override fun init(context: FixedKeyProcessorContext<String, T>) {
             this.store = context.getStateStore(table.table.stateStoreName)

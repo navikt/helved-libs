@@ -75,6 +75,9 @@ internal class Mock : Streams {
     override fun <T : Any> getStore(table: Table<T>): StateStore<T> =
         StateStore(internalStreams.getKeyValueStore(table.stateStoreName))
 
+    override fun <T : Any> getStore(name: StateStoreName): StateStore<T> =
+        StateStore(internalStreams.getKeyValueStore(name))
+
     override fun close() = internalStreams.close()
 }
 

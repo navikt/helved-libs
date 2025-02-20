@@ -15,6 +15,7 @@ import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Named
 import org.apache.kafka.streams.state.QueryableStoreTypes
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
+import org.apache.kafka.streams.state.TimestampedKeyValueStore
 import org.apache.kafka.streams.state.ValueAndTimestamp
 
 private fun <T : Any> nameSupplierFrom(topic: Topic<T>): () -> String = { "from-${topic.name}" }
@@ -26,6 +27,7 @@ interface Streams : ProducerFactory, ConsumerFactory, AutoCloseable {
     fun visulize(): TopologyVisulizer
     fun registerInternalTopology(internalTopology: org.apache.kafka.streams.Topology)
     fun <T : Any> getStore(table: Table<T>): StateStore<T>
+    fun <T : Any> getStore(name: StateStoreName): StateStore<T>
 }
 
 class KafkaStreams : Streams {
@@ -60,8 +62,16 @@ class KafkaStreams : Streams {
 
     override fun <T : Any> getStore(table: Table<T>): StateStore<T> = StateStore(
         internalStreams.store(
-            StoreQueryParameters.fromNameAndType<ReadOnlyKeyValueStore<String, ValueAndTimestamp<T>>>(
+            StoreQueryParameters.fromNameAndType(
                 table.stateStoreName,
+                QueryableStoreTypes.keyValueStore()
+            )
+        )
+    )
+    override fun <T : Any> getStore(name: StateStoreName): StateStore<T> = StateStore(
+        internalStreams.store(
+            StoreQueryParameters.fromNameAndType(
+                name,
                 QueryableStoreTypes.keyValueStore()
             )
         )

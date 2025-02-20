@@ -246,10 +246,6 @@ internal class MappedStreamTest {
         assertEquals("bb", result["test:2"])
     }
 
-    data class ChangedDto<T>(
-        val id: Int,
-        val data: T,
-    )
 
     @Test
     fun `join mapped stream`() {
@@ -270,4 +266,26 @@ internal class MappedStreamTest {
         assertEquals(1, result.size)
         assertEquals(ChangedDto(9, "heyheyho"), jacksonObjectMapper().readValue<ChangedDto<String>>(result["1"]!!))
     }
+
+    @Test
+    fun `materialize stream`() {
+        var stateStoreName = ""
+        val kafka = Mock.withTopology {
+            stateStoreName = consume(Topics.A)
+                .map { it -> JsonDto(9, it) }
+                .materialize(JsonSerde.jackson())
+        }
+
+        val jsonDtoStore = kafka.getStore<JsonDto>(stateStoreName)
+
+        kafka.inputTopic(Topics.A).produce("1", "lol")
+
+        val actual = jsonDtoStore.getOrNull("1")
+        assertEquals(JsonDto(9, "lol"), actual)
+    }
 }
+
+data class ChangedDto<T>(
+    val id: Int,
+    val data: T,
+)
