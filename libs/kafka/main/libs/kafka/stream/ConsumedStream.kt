@@ -1,5 +1,7 @@
 package libs.kafka.stream
 
+import kotlin.time.Duration
+import kotlin.time.toJavaDuration
 import libs.kafka.*
 import libs.kafka.KTable
 import libs.kafka.filterNotNull
@@ -7,12 +9,10 @@ import libs.kafka.processor.MetadataProcessor
 import libs.kafka.processor.Processor
 import libs.kafka.processor.Processor.Companion.addProcessor
 import libs.kafka.processor.ProcessorMetadata
-import libs.kafka.processor.StateProcessor.Companion.addProcessor
 import libs.kafka.processor.StateProcessor
+import libs.kafka.processor.StateProcessor.Companion.addProcessor
 import libs.kafka.produceWithLogging
 import org.apache.kafka.streams.kstream.*
-import kotlin.time.Duration
-import kotlin.time.toJavaDuration
 
 @Suppress("UNCHECKED_CAST")
 class ConsumedStream<K: Any, V : Any> internal constructor(
