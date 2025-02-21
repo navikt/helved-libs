@@ -12,7 +12,6 @@ internal class LogConsumeTopicProcessor<K: Any, V>(
     private val topic: Topic<K, V & Any>,
     namedSuffix: String = "",
 ) : Processor<K, V, V>("log-consume-${topic.name}$namedSuffix") {
-
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         log.trace(
             "consume ${metadata.topic}",
@@ -21,7 +20,6 @@ internal class LogConsumeTopicProcessor<K: Any, V>(
             kv("partition", metadata.partition),
             kv("offset", metadata.offset),
         )
-
         secureLog.trace(
             "consume ${metadata.topic}",
             kv("key", keyValue.key),
@@ -30,7 +28,27 @@ internal class LogConsumeTopicProcessor<K: Any, V>(
             kv("offset", metadata.offset),
             kv("value", keyValue.value),
         )
+        return keyValue.value
+    }
+}
 
+internal class LogProduceStateStoreProcessor<K: Any, V>(
+    private val name: StateStoreName,
+): Processor<K, V, V>("log-produced-$name") {
+    override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
+        log.trace(
+            "materialize $name",
+            kv("key", keyValue.key),
+            kv("store", name),
+            kv("partition", metadata.partition),
+        )
+        secureLog.trace(
+            "materialize $name",
+            kv("key", keyValue.key),
+            kv("store", name),
+            kv("partition", metadata.partition),
+            kv("value", keyValue.value),
+        )
         return keyValue.value
     }
 }
@@ -38,35 +56,22 @@ internal class LogConsumeTopicProcessor<K: Any, V>(
 internal class LogProduceTableProcessor<K: Any, V>(
     private val table: Table<K, V & Any>,
 ) : Processor<K, V, V>("log-produced-${table.sourceTopicName}") {
-
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
-        when (keyValue.value) {
-            null -> log.trace(
-                "materialize tombsone ${table.sourceTopicName}",
-                kv("key", keyValue.key),
-                kv("table", table.sourceTopicName),
-                kv("store", table.stateStoreName),
-                kv("partition", metadata.partition),
-            )
-
-            else -> { 
-                log.trace(
-                    "materialize ${table.sourceTopicName}",
-                    kv("key", keyValue.key),
-                    kv("table", table.sourceTopicName),
-                    kv("store", table.stateStoreName),
-                    kv("partition", metadata.partition),
-                )
-                secureLog.trace(
-                    "materialize ${table.sourceTopicName}",
-                    kv("key", keyValue.key),
-                    kv("table", table.sourceTopicName),
-                    kv("store", table.stateStoreName),
-                    kv("partition", metadata.partition),
-                    kv("value", keyValue.value),
-                )
-            }
-        }
+        log.trace(
+            "materialize ${table.sourceTopicName}",
+            kv("key", keyValue.key),
+            kv("table", table.sourceTopicName),
+            kv("store", table.stateStoreName),
+            kv("partition", metadata.partition),
+        )
+        secureLog.trace(
+            "materialize ${table.sourceTopicName}",
+            kv("key", keyValue.key),
+            kv("table", table.sourceTopicName),
+            kv("store", table.stateStoreName),
+            kv("partition", metadata.partition),
+            kv("value", keyValue.value),
+        )
         return keyValue.value
     }
 }
@@ -75,7 +80,6 @@ internal class LogProduceTopicProcessor<K: Any, V> internal constructor(
     named: String,
     private val topic: Topic<K, V & Any>,
 ) : Processor<K, V, V>(named) {
-
     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<K, V>): V {
         log.trace(
             "produce ${topic.name}",

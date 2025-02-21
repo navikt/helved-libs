@@ -5,6 +5,7 @@ import libs.kafka.processor.Processor
 import libs.kafka.processor.Processor.Companion.addProcessor
 import libs.kafka.processor.StateProcessor
 import libs.kafka.processor.StateProcessor.Companion.addProcessor
+import libs.kafka.processor.LogProduceStateStoreProcessor
 import org.apache.kafka.streams.kstream.KStream
 import org.apache.kafka.streams.kstream.Named
 
@@ -20,7 +21,8 @@ class MappedStream<K: Any, V : Any> internal constructor(
     }
 
     fun materialize(stateStoreName: StateStoreName = "${namedSupplier()}-to-table"): StateStoreName {
-        stream.toTable(materialized(stateStoreName, serdes))
+        val loggedStream = stream.addProcessor(LogProduceStateStoreProcessor(stateStoreName))
+        loggedStream.toTable(materialized(stateStoreName, serdes))
         return stateStoreName
     }
 
