@@ -18,7 +18,7 @@ interface Streams : ProducerFactory, ConsumerFactory, AutoCloseable {
     fun live(): Boolean
     fun visulize(): TopologyVisulizer
     fun registerInternalTopology(internalTopology: org.apache.kafka.streams.Topology)
-    fun <K: Any, T : Any> getStore(name: StateStoreName): StateStore<K, T>
+    fun <K: Any, V : Any> getStore(name: StateStoreName): StateStore<K, V>
 }
 
 class KafkaStreams : Streams {
@@ -51,9 +51,9 @@ class KafkaStreams : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <K: Any, T : Any> getStore(name: StateStoreName): StateStore<K, T> = StateStore(
+    override fun <K: Any, V : Any> getStore(name: StateStoreName): StateStore<K, V> = StateStore(
         internalStreams.store(
-            StoreQueryParameters.fromNameAndType(
+            StoreQueryParameters.fromNameAndType<ReadOnlyKeyValueStore<K, ValueAndTimestamp<V>>>(
                 name,
                 QueryableStoreTypes.keyValueStore()
             )

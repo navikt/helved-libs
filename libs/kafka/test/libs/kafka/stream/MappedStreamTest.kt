@@ -6,6 +6,7 @@ import libs.kafka.*
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import org.apache.kafka.streams.state.ValueAndTimestamp
 
 internal class MappedStreamTest {
     @Test

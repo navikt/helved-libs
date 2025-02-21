@@ -4,7 +4,7 @@ import libs.kafka.processor.*
 import libs.kafka.processor.Processor.Companion.addProcessor
 import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.kstream.*
-import org.apache.kafka.streams.state.KeyValueStore
+import org.apache.kafka.streams.state.*
 
 internal fun <K: Any, V : Any> KStream<K, V>.produceWithLogging(
     topic: Topic<K, V>,

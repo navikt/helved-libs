@@ -8,7 +8,7 @@ import libs.kafka.processor.StateProcessor
 import org.apache.kafka.streams.TestInputTopic
 import org.apache.kafka.streams.TestOutputTopic
 import org.apache.kafka.streams.TopologyTestDriver
-import org.apache.kafka.streams.state.TimestampedKeyValueStore
+import org.apache.kafka.streams.state.*
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -70,7 +70,7 @@ internal class Mock : Streams {
     }
 
     override fun <K: Any, T : Any> getStore(name: StateStoreName): StateStore<K, T> =
-        StateStore(internalStreams.getKeyValueStore(name))
+        StateStore(internalStreams.getTimestampedKeyValueStore<K, T>(name))
 
     override fun close() = internalStreams.close()
 }
