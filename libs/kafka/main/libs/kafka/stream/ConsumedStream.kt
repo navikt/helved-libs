@@ -31,6 +31,11 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return ConsumedStream(serdes, rekeyedStream, namedSupplier)
     }
 
+    fun <K2: Any> rekey(serde: StreamSerde<K2> = serdes.key as StreamSerde<K2>, selectKeyFromValue: (V) -> K2): ConsumedStream<K2, V> {
+        val rekeyedStream = stream.selectKey { _, value -> selectKeyFromValue(value) }
+        return ConsumedStream(Serdes(serde, serdes.value), rekeyedStream, namedSupplier)
+    }
+
     fun filter(lambda: (V) -> Boolean): ConsumedStream<K, V> {
         val filteredStream = stream.filter { _, value -> lambda(value) }
         return ConsumedStream(serdes, filteredStream, namedSupplier)
