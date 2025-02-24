@@ -67,6 +67,15 @@ class MappedStream<K: Any, V : Any> internal constructor(
         return MappedStream(serdes, rekeyedStream, namedSupplier)
     }
 
+    fun <K2: Any> rekey(serde: StreamSerde<K2>, mapper: (key: K, value: V) -> K2): MappedStream<K2, V> {
+        val rekeyedStream = stream.selectKey { key, value -> mapper(key, value) }
+        return MappedStream(Serdes(serde, serdes.value), rekeyedStream, namedSupplier)
+    }
+    fun rekey(mapper: (key: K, value: V) -> K): MappedStream<K, V> {
+        val rekeyedStream = stream.selectKey { key, value -> mapper(key, value) }
+        return MappedStream(serdes, rekeyedStream, namedSupplier)
+    }
+
     fun filter(lambda: (V) -> Boolean): MappedStream<K, V> {
         val filteredStream = stream.filter { _, value -> lambda(value) }
         return MappedStream(serdes, filteredStream, namedSupplier)
