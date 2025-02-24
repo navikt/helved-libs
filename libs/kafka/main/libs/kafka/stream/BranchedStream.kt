@@ -1,7 +1,5 @@
 package libs.kafka.stream
 
-import libs.kafka.Topic
-import libs.kafka.stream.MappedStream
 import libs.kafka.Serdes
 import org.apache.kafka.streams.kstream.Branched
 import org.apache.kafka.streams.kstream.KStream

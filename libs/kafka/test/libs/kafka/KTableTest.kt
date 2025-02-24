@@ -1,9 +1,7 @@
 package libs.kafka
 
-import kotlin.test.assertEquals
-import libs.kafka.*
-import no.nav.aap.kafka.streams.v2.*
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 
 class KTableTest {
 
@@ -50,4 +48,3 @@ class KTableTest {
         assertEquals("niceprice", result["2"])
     }
 }
-

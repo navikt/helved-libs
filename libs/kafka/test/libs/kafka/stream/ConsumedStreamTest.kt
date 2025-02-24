@@ -209,7 +209,7 @@ internal class ConsumedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .flatMap { _, _ -> listOf("a".hashCode(), "b".hashCode()) }
-                .map { value -> value.toString() }
+                .map(StringSerde) { value -> value.toString() }
                 .produce(Topics.C)
         }
 

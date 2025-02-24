@@ -5,7 +5,6 @@ import libs.kafka.Tables
 import libs.kafka.Topics
 import libs.kafka.produce
 import libs.kafka.JsonSerde
-import libs.kafka.StringSerde
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -133,11 +132,11 @@ internal class BranchedStreamTest {
             consume(Topics.A)
                 .join(Topics.A, tableB)
                 .branch({ (left, _) -> left == "lol" }, {
-                    map { (left, right) -> left + right }
+                    map(JsonSerde.jackson()) { (left, right) -> left + right }
                         .produce(Topics.C)
                 })
                 .branch({ (_, right) -> right == "lol" }, {
-                    map { (_, right) -> right + right }
+                    map(JsonSerde.jackson()) { (_, right) -> right + right }
                         .produce(Topics.D)
                 })
         }
@@ -161,11 +160,12 @@ internal class BranchedStreamTest {
             consume(Topics.A)
                 .join(Topics.A, tableB)
                 .branch({ (left, _) -> left == "lol" }, {
-                    map { (left, right) -> left + right }.produce(Topics.C)
+                    // StreamsPair<L, R> -> LR krever ny serde. L er implisitt StreamsPair<L, R>
+                    map(JsonSerde.jackson()) { (left, right) -> left + right }.produce(Topics.C)
 
                 })
                 .default {
-                    map { (_, right) -> right + right }.produce(Topics.D)
+                    map(JsonSerde.jackson()) { (_, right) -> right + right }.produce(Topics.D)
                 }
         }
 
@@ -188,10 +188,10 @@ internal class BranchedStreamTest {
             consume(Topics.A)
                 .leftJoin(Topics.A, tableB)
                 .branch({ (left, _) -> left == "lol" }, {
-                    map { (left, right) -> left + right }.produce(Topics.C)
+                    map(JsonSerde.jackson()) { (left, right) -> left + right }.produce(Topics.C)
                 })
                 .branch({ (_, right) -> right == "lol" }, {
-                    map { (_, right) -> right + right }.produce(Topics.D)
+                    map(JsonSerde.jackson()) { (_, right) -> right + right }.produce(Topics.D)
                 })
         }
 
@@ -214,10 +214,10 @@ internal class BranchedStreamTest {
             consume(Topics.A)
                 .leftJoin(Topics.A, tableB)
                 .branch({ (left, _) -> left == "lol" }, {
-                    map { (left, right) -> left + right }.produce(Topics.C)
+                    map(JsonSerde.jackson()) { (left, right) -> left + right }.produce(Topics.C)
                 })
                 .default {
-                    map { (_, right) -> right + right }.produce(Topics.D)
+                    map(JsonSerde.jackson()) { (_, right) -> right + right }.produce(Topics.D)
                 }
         }
 

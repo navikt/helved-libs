@@ -26,14 +26,13 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         stream.produceWithLogging(topic, named)
     }
 
+    fun <K2: Any> rekey(serde: StreamSerde<K2>, selectKeyFromValue: (V) -> K2): ConsumedStream<K2, V> {
+        val rekeyedStream = stream.selectKey { _, value -> selectKeyFromValue(value) }
+        return ConsumedStream(Serdes(serde, serdes.value), rekeyedStream, namedSupplier)
+    }
     fun rekey(selectKeyFromValue: (V) -> K): ConsumedStream<K, V> {
         val rekeyedStream = stream.selectKey { _, value -> selectKeyFromValue(value) }
         return ConsumedStream(serdes, rekeyedStream, namedSupplier)
-    }
-
-    fun <K2: Any> rekey(serde: StreamSerde<K2> = serdes.key as StreamSerde<K2>, selectKeyFromValue: (V) -> K2): ConsumedStream<K2, V> {
-        val rekeyedStream = stream.selectKey { _, value -> selectKeyFromValue(value) }
-        return ConsumedStream(Serdes(serde, serdes.value), rekeyedStream, namedSupplier)
     }
 
     fun filter(lambda: (V) -> Boolean): ConsumedStream<K, V> {
@@ -46,31 +45,40 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return ConsumedStream(serdes, filteredStream, namedSupplier)
     }
 
-    fun <U : Any> map(mapper: (value: V) -> U): MappedStream<K, U> {
-        val mappedStream = stream.mapValues { value -> mapper(value) }
-        return MappedStream(serdes as Serdes<K, U>, mappedStream, namedSupplier)
-    }
-
-    fun <U : Any> map(serde: StreamSerde<U> = serdes.value as StreamSerde<U>, mapper: (value: V) -> U): MappedStream<K, U> {
+    fun <U : Any> map(serde: StreamSerde<U>, mapper: (value: V) -> U): MappedStream<K, U> {
         val mappedStream = stream.mapValues { value -> mapper(value) }
         return MappedStream(Serdes(serdes.key, serde), mappedStream, namedSupplier)
     }
+    fun map(mapper: (value: V) -> V): MappedStream<K, V> {
+        val mappedStream = stream.mapValues { value -> mapper(value) }
+        return MappedStream(serdes, mappedStream, namedSupplier)
+    }
 
-    fun <U : Any> map(serde: StreamSerde<U> = serdes.value as StreamSerde<U>, mapper: (key: K, value: V) -> U): MappedStream<K, U> {
+    fun <U : Any> map(serde: StreamSerde<U>, mapper: (key: K, value: V) -> U): MappedStream<K, U> {
         val mappedStream = stream.mapValues { key, value -> mapper(key, value) }
         return MappedStream(Serdes(serdes.key, serde), mappedStream, namedSupplier)
     }
+    fun map(mapper: (key: K, value: V) -> V): MappedStream<K, V> {
+        val mappedStream = stream.mapValues { key, value -> mapper(key, value) }
+        return MappedStream(serdes, mappedStream, namedSupplier)
+    }
 
     fun <U : Any> mapWithMetadata(serde: StreamSerde<U> = serdes.value as StreamSerde<U>, mapper: (value: V, metadata: ProcessorMetadata) -> U): MappedStream<K, U> {
-        val mappedStream = stream
-            .addProcessor(MetadataProcessor(namedSupplier()))
-            .mapValues { (kv, metadata) -> mapper(kv.value, metadata) }
+        val mappedStream = stream.addProcessor(MetadataProcessor(namedSupplier())).mapValues { (kv, metadata) -> mapper(kv.value, metadata) }
         return MappedStream(Serdes(serdes.key, serde), mappedStream, namedSupplier)
+    }
+    fun mapWithMetadata(mapper: (value: V, metadata: ProcessorMetadata) -> V): MappedStream<K, V> {
+        val mappedStream = stream.addProcessor(MetadataProcessor(namedSupplier())).mapValues { (kv, metadata) -> mapper(kv.value, metadata) }
+        return MappedStream(serdes, mappedStream, namedSupplier)
     }
 
     fun <U> mapNotNull(serde: StreamSerde<U & Any> = serdes.value as StreamSerde<U & Any>, mapper: (key: K, value: V) -> U): MappedStream<K, U & Any> {
         val valuedStream = stream.mapValues { key, value -> mapper(key, value) }.filterNotNull()
         return MappedStream(Serdes(serdes.key, serde), valuedStream, namedSupplier)
+    }
+    fun mapNotNull(mapper: (key: K, value: V) -> V?): MappedStream<K, V> {
+        val valuedStream = stream.mapValues { key, value -> mapper(key, value) }.filterNotNull()
+        return MappedStream(serdes, valuedStream, namedSupplier)
     }
 
     fun flatMapPreserveType(mapper: (key: K, value: V) -> Iterable<V>): ConsumedStream<K, V> {
@@ -168,7 +176,6 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return JoinedStream(left.serdes, joinedStream, named)
     }
 
-    // should not be necessary to provide topic (left) if join is allowed
     fun <R : Any> leftJoin(left: Topic<K, V>, right: KTable<K, R>): JoinedStream<K, V, R?> {
         val named = { "${left.name}-left-join-${right.table.sourceTopic.name}" }
         val joinedStream = stream.leftJoin(left, right, ::StreamsPair)
@@ -198,19 +205,22 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return ConsumedStream(serdes, stream.repartition(repartition), namedSupplier)
     }
 
-    fun <U : Any> processor(serde: StreamSerde<U> = serdes.value as StreamSerde<U>, processor: Processor<K, V, U>): MappedStream<K, U> {
+    fun <U : Any> processor(serde: StreamSerde<U>, processor: Processor<K, V, U>): MappedStream<K, U> {
         val processorStream = stream.addProcessor(processor)
         return MappedStream(Serdes(serdes.key, serde), processorStream, namedSupplier)
     }
-
-    fun processor(processor: Processor<K, V, V>): ConsumedStream<K, V> {
+    fun  processor(processor: Processor<K, V, V>): MappedStream<K, V> {
         val processorStream = stream.addProcessor(processor)
-        return ConsumedStream(serdes, processorStream, namedSupplier)
+        return MappedStream(serdes, processorStream, namedSupplier)
     }
 
-    fun <TABLE : Any, U : Any> processor(serde: StreamSerde<U> = serdes.value as StreamSerde<U>, processor: StateProcessor<K, TABLE, V, U>): MappedStream<K, U> {
+    fun <TABLE : Any, U : Any> processor(serde: StreamSerde<U>, processor: StateProcessor<K, TABLE, V, U>): MappedStream<K, U> {
         val processorStream = stream.addProcessor(processor)
         return MappedStream(Serdes(serdes.key, serde), processorStream, namedSupplier)
+    }
+    fun <TABLE : Any> processor(processor: StateProcessor<K, TABLE, V, V>): MappedStream<K, V> {
+        val processorStream = stream.addProcessor(processor)
+        return MappedStream(serdes, processorStream, namedSupplier)
     }
 
     fun forEach(mapper: (key: K, value: V) -> Unit) {

@@ -136,7 +136,9 @@ internal class MappedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .leftJoin(Topics.A, table)
-                .mapKeyValue { key, left, right -> KeyValue("$key$key", right + left) }
+                .mapKeyValue(Serdes(StringSerde, StringSerde)) { key, left, right ->
+                    KeyValue("$key$key", right + left)
+                }
                 .produce(Topics.C)
         }
 
@@ -252,9 +254,9 @@ internal class MappedStreamTest {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.E)
-                .map { it -> ChangedDto(9, it.data) }
+                .map(JsonSerde.jackson()) { it -> ChangedDto(9, it.data) }
                 .leftJoin(table)
-                .map { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
+                .map(StringSerde) { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
                 .produce(Topics.C)
         }
 
