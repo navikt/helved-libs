@@ -19,6 +19,9 @@ data class Serdes<K: Any, V>(
 
 interface StreamSerde<T> : Serde<T>
 
+inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.jackson<V>())
+inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.serde<V>())
+
 object StringSerde : StreamSerde<String> {
     private val internalSerde = Serdes.StringSerde()
     override fun serializer(): Serializer<String> = internalSerde.serializer()
