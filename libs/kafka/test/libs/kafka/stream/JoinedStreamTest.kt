@@ -166,9 +166,7 @@ internal class JoinedStreamTest {
             consume(Topics.A)
                 .filter { it != "humbug" }
                 .join(Topics.A, consume(Tables.B))
-                .flatMapKeyValue(Serdes(StringSerde, StringSerde)) { s, a, b ->
-                    listOf(KeyValue(s, a), KeyValue(s, b))
-                }
+                .flatMapKeyValue { s, a, b -> listOf(KeyValue(s, a), KeyValue(s, b)) }
                 .produce(Topics.C)
         }
 

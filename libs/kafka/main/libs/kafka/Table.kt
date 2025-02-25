@@ -22,7 +22,6 @@ class KTable<K: Any, V : Any>(
 
     fun toStream(): ConsumedStream<K, V> {
         return ConsumedStream(
-            table.serdes,
             internalKTable.toStream().skipTombstone(table.sourceTopic, "to-stream"),
             { "consume-${table.stateStoreName}" })
     }

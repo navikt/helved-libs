@@ -56,7 +56,7 @@ class MermaidTest {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
-                .processor(StringSerde, CustomProcessorWithTable(table))
+                .processor(CustomProcessorWithTable(table))
                 .produce(Topics.C)
         }
 

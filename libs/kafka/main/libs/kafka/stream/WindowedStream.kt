@@ -22,7 +22,7 @@ class TimeWindowedStream<K: Any, V : Any> internal constructor(
             .toStream()
             .selectKey { key, _ -> key.key() }
 
-        return ConsumedStream(serdes, reducedStream, {named} ) 
+        return ConsumedStream(reducedStream, {named} ) 
     }
 }
 
@@ -43,6 +43,6 @@ class SessionWindowedStream<K: Any, V : Any> internal constructor(
             .toStream()
             .selectKey { key, _ -> key.key() }
 
-        return ConsumedStream(serdes, reducedStream, { named }) 
+        return ConsumedStream(reducedStream, { named }) 
     }
 }

@@ -136,9 +136,7 @@ internal class MappedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .leftJoin(Topics.A, table)
-                .mapKeyValue(Serdes(StringSerde, StringSerde)) { key, left, right ->
-                    KeyValue("$key$key", right + left)
-                }
+                .mapKeyValue { key, left, right -> KeyValue("$key$key", right + left) }
                 .produce(Topics.C)
         }
 
@@ -162,7 +160,7 @@ internal class MappedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .map { v -> v }
-                .processor(StringSerde, CustomProcessor())
+                .processor(CustomProcessor())
                 .produce(Topics.C)
         }
 
@@ -180,7 +178,7 @@ internal class MappedStreamTest {
             val table = consume(Tables.B)
             consume(Topics.A)
                 .map { v -> v }
-                .stateProcessor(StringSerde, CustomProcessorWithTable(table))
+                .stateProcessor(CustomProcessorWithTable(table))
                 .produce(Topics.C)
         }
 
@@ -254,9 +252,9 @@ internal class MappedStreamTest {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.E)
-                .map(JsonSerde.jackson()) { it -> ChangedDto(9, it.data) }
-                .leftJoin(table)
-                .map(StringSerde) { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
+                .map { it -> ChangedDto(9, it.data) }
+                .leftJoin(json(), table)
+                .map { l, r -> jacksonObjectMapper().writeValueAsString(l.copy(data = r!!)) }
                 .produce(Topics.C)
         }
 
@@ -271,15 +269,15 @@ internal class MappedStreamTest {
 
     @Test
     fun `materialize stream`() {
-        var stateStoreName = ""
+        val store = Store("yey", Serdes<KeyDto, JsonDto>(JsonSerde.jackson(), JsonSerde.jackson()))
         val kafka = Mock.withTopology {
-            stateStoreName = consume(Topics.A)
-                .map(JsonSerde.jackson()) { it -> JsonDto(9, it) }
-                .rekey(JsonSerde.jackson()) { jsonDto -> KeyDto(jsonDto.data) }
-                .materialize()
+            consume(Topics.A)
+                .map { it -> JsonDto(9, it) }
+                .rekey { jsonDto -> KeyDto(jsonDto.data) }
+                .materialize(store)
         }
 
-        val jsonDtoStore = kafka.getStore<KeyDto, JsonDto>(stateStoreName)
+        val jsonDtoStore = kafka.getStore<KeyDto, JsonDto>(store)
 
         kafka.inputTopic(Topics.A).produce("1", "lol")
 

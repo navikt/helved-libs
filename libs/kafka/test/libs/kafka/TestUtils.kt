@@ -69,8 +69,8 @@ internal class Mock : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <K: Any, T : Any> getStore(name: StateStoreName): StateStore<K, T> =
-        StateStore(internalStreams.getTimestampedKeyValueStore<K, T>(name))
+    override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> =
+        StateStore(internalStreams.getTimestampedKeyValueStore<K, V>(store.name))
 
     override fun close() = internalStreams.close()
 }

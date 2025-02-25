@@ -18,7 +18,7 @@ interface Streams : ProducerFactory, ConsumerFactory, AutoCloseable {
     fun live(): Boolean
     fun visulize(): TopologyVisulizer
     fun registerInternalTopology(internalTopology: org.apache.kafka.streams.Topology)
-    fun <K: Any, V : Any> getStore(name: StateStoreName): StateStore<K, V>
+    fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V>
 }
 
 class KafkaStreams : Streams {
@@ -51,10 +51,10 @@ class KafkaStreams : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <K: Any, V : Any> getStore(name: StateStoreName): StateStore<K, V> = StateStore(
+    override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> = StateStore(
         internalStreams.store(
             StoreQueryParameters.fromNameAndType<ReadOnlyKeyValueStore<K, ValueAndTimestamp<V>>>(
-                name,
+                store.name,
                 QueryableStoreTypes.keyValueStore()
             )
         )
@@ -66,7 +66,7 @@ class Topology internal constructor() {
 
     fun <K: Any, V : Any> consume(topic: Topic<K, V>): ConsumedStream<K, V> {
         val consumed = consumeWithLogging<K, V?>(topic).skipTombstone(topic)
-        return ConsumedStream(topic.serdes, consumed, nameSupplierFrom(topic))
+        return ConsumedStream(consumed, nameSupplierFrom(topic))
     }
 
     fun <K: Any, V : Any> consume(table: Table<K, V>): KTable<K, V> {
@@ -93,7 +93,7 @@ class Topology internal constructor() {
     fun <K: Any, V : Any> consumeForMock(topic: Topic<K, V>, namedPrefix: String = "mock"): ConsumedStream<K, V> {
         val consumed = consumeWithLogging(topic, namedPrefix).skipTombstone(topic, namedPrefix)
         val prefixedNamedSupplier = { "$namedPrefix-${nameSupplierFrom(topic).invoke()}" }
-        return ConsumedStream(topic.serdes, consumed, prefixedNamedSupplier)
+        return ConsumedStream(consumed, prefixedNamedSupplier)
     }
 
     fun <K: Any, V : Any> consume(
@@ -104,7 +104,7 @@ class Topology internal constructor() {
         stream.addProcessor(MetadataProcessor(topic.name)).foreach { _, (kv, metadata) ->
             onEach(kv.key, kv.value, metadata)
         }
-        return ConsumedStream(topic.serdes, stream.skipTombstone(topic), nameSupplierFrom(topic))
+        return ConsumedStream(stream.skipTombstone(topic), nameSupplierFrom(topic))
     }
 
     fun registerInternalTopology(stream: Streams) {

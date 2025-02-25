@@ -68,7 +68,7 @@ internal class ConsumedStreamTest {
         val kafka = Mock.withTopology {
             val table = consume(Tables.B)
             consume(Topics.A)
-                .processor(StringSerde, CustomProcessorWithTable(table))
+                .processor(CustomProcessorWithTable(table))
                 .produce(Topics.C)
         }
 
@@ -84,12 +84,12 @@ internal class ConsumedStreamTest {
     fun `use custom processor with mapping`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .processor(JsonSerde.jackson(), object : Processor<String, String, Int>("named") {
+                .processor(object : Processor<String, String, Int>("named") {
                     override fun process(metadata: ProcessorMetadata, keyValue: KeyValue<String, String>): Int {
                         return keyValue.value.toInt() + 1
                     }
                 })
-                .map(StringSerde, Int::toString)
+                .map(Int::toString)
                 .produce(Topics.C)
         }
 
@@ -209,7 +209,7 @@ internal class ConsumedStreamTest {
         val kafka = Mock.withTopology {
             consume(Topics.A)
                 .flatMap { _, _ -> listOf("a".hashCode(), "b".hashCode()) }
-                .map(StringSerde) { value -> value.toString() }
+                .map { value -> value.toString() }
                 .produce(Topics.C)
         }
 
@@ -252,7 +252,7 @@ internal class ConsumedStreamTest {
                 val ktable = consumeRepartitioned(Tables.B, 3)
 
                 consume(Topics.A)
-                    .repartition(4)
+                    .repartition(string(), 4)
                     .join(Topics.A, ktable)
                     .map { a, b -> a + b }
                     .produce(Topics.C)

@@ -38,8 +38,8 @@ class StreamsMock : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <K: Any, V : Any> getStore(name: StateStoreName): StateStore<K, V> = StateStore(
-        internalStreams.getTimestampedKeyValueStore(name)
+    override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> = StateStore(
+        internalStreams.getTimestampedKeyValueStore(store.name)
     )
 
     fun <K: Any, V : Any> testTopic(topic: Topic<K, V>): TestTopic<K, V> =

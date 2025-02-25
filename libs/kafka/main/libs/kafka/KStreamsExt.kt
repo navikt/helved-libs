@@ -90,12 +90,11 @@ internal fun <K: Any, V> repartitioned(table: Table<K, V & Any>, partitions: Int
 }
 
 internal fun <K: Any, V : Any> materialized(
-    stateStoreName: String,
-    serdes: Serdes<K, V>,
+    store: Store<K, V>,
 ): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {
-    return Materialized.`as`<K, V, KeyValueStore<Bytes, ByteArray>>(stateStoreName)
-        .withKeySerde(serdes.key)
-        .withValueSerde(serdes.value)
+    return Materialized.`as`<K, V, KeyValueStore<Bytes, ByteArray>>(store.name)
+        .withKeySerde(store.serde.key)
+        .withValueSerde(store.serde.value)
 }
 
 internal fun <K: Any, V : Any> materialized(table: Table<K, V>): Materialized<K, V?, KeyValueStore<Bytes, ByteArray>> {

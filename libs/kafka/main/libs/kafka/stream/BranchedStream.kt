@@ -5,7 +5,6 @@ import org.apache.kafka.streams.kstream.Branched
 import org.apache.kafka.streams.kstream.KStream
 
 class BranchedKStream<K: Any, V : Any> internal constructor(
-    private val serdes: Serdes<K, V>,
     private val stream: org.apache.kafka.streams.kstream.BranchedKStream<K, V>,
     private val namedSupplier: () -> String,
 ) {
@@ -34,13 +33,12 @@ class BranchedKStream<K: Any, V : Any> internal constructor(
         namedBranch: String,
         namedSupplier: () -> String,
     ): Branched<K, V> = Branched.withConsumer(
-        { chain: KStream<K, V> -> branch(ConsumedStream(serdes, chain, namedSupplier)) },
+        { chain: KStream<K, V> -> branch(ConsumedStream(chain, namedSupplier)) },
         namedBranch
     )
 }
 
 class BranchedMappedKStream<K: Any, V : Any> internal constructor(
-    private val serdes: Serdes<K, V>,
     private val stream: org.apache.kafka.streams.kstream.BranchedKStream<K, V>,
     private val namedSupplier: () -> String,
 ) {
@@ -69,7 +67,7 @@ class BranchedMappedKStream<K: Any, V : Any> internal constructor(
         namedBranch: String,
         namedSupplier: () -> String,
     ): Branched<K, V> = Branched.withConsumer(
-        { chain: KStream<K, V> -> branch(MappedStream(serdes, chain, namedSupplier)) },
+        { chain: KStream<K, V> -> branch(MappedStream(chain, namedSupplier)) },
         namedBranch
     )
 }

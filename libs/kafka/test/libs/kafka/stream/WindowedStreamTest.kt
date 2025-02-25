@@ -4,6 +4,7 @@ import libs.kafka.Mock
 import libs.kafka.Topics
 import libs.kafka.ms
 import libs.kafka.produce
+import libs.kafka.string
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -13,7 +14,7 @@ internal class WindowedStreamTest {
     fun `reduce with sliding windows`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .slidingWindow(100.ms)
+                .slidingWindow(string(), 100.ms)
                 .reduce { s, s2 -> "$s$s2" }
                 .produce(Topics.B)
         }
@@ -37,7 +38,7 @@ internal class WindowedStreamTest {
     fun `reduce with hopping windows`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .hoppingWindow(100.ms, advanceSize = 50.ms)
+                .hoppingWindow(string(), 100.ms, advanceSize = 50.ms)
                 .reduce { s, s2 -> "$s$s2" }
                 .produce(Topics.B)
         }
@@ -60,7 +61,7 @@ internal class WindowedStreamTest {
     fun `reduce with tumbling windows`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .tumblingWindow(100.ms)
+                .tumblingWindow(string(), 100.ms)
                 .reduce { s, s2 -> "$s$s2" }
                 .produce(Topics.B)
         }
@@ -83,7 +84,7 @@ internal class WindowedStreamTest {
     fun `reduce with session windows`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .sessionWindow(50.ms)
+                .sessionWindow(string(), 50.ms)
                 .reduce { s, s2 -> "$s$s2" }
                 .produce(Topics.B)
         }
