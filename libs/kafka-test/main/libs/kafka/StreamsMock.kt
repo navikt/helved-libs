@@ -6,13 +6,18 @@ import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.clients.producer.MockProducer
+import org.apache.kafka.streams.StreamsBuilder
 import org.apache.kafka.streams.TopologyTestDriver
 
 class StreamsMock : Streams {
     private lateinit var internalStreams: TopologyTestDriver
     private lateinit var internalTopology: org.apache.kafka.streams.Topology
 
+    // used for POCs
+    var intercept: (StreamsBuilder) -> Unit = {}
+
     override fun connect(topology: Topology, config: StreamsConfig, registry: MeterRegistry) {
+        topology.intercept(intercept)
         topology.registerInternalTopology(this)
 
         val testProperties = config.streamsProperties()

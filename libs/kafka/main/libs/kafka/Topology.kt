@@ -111,7 +111,7 @@ class Topology internal constructor() {
         stream.registerInternalTopology(builder.build())
     }
 
-    internal fun buildInternalTopology() = builder.build()
+    fun intercept(block: StreamsBuilder.() -> Unit) = builder.block()
 
     private fun <K: Any, V> consumeWithLogging(topic: Topic<K, V & Any>): KStream<K, V> = consumeWithLogging(topic, "")
 
