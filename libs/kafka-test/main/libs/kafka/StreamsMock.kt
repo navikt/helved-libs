@@ -6,9 +6,6 @@ import org.apache.kafka.clients.consumer.Consumer
 import org.apache.kafka.clients.consumer.MockConsumer
 import org.apache.kafka.clients.consumer.OffsetResetStrategy
 import org.apache.kafka.clients.producer.MockProducer
-import org.apache.kafka.streams.StreamsConfig.*
-import org.apache.kafka.streams.state.QueryableStoreTypes
-import org.apache.kafka.streams.StoreQueryParameters
 import org.apache.kafka.streams.TopologyTestDriver
 
 class StreamsMock : Streams {
@@ -18,10 +15,11 @@ class StreamsMock : Streams {
     override fun connect(topology: Topology, config: StreamsConfig, registry: MeterRegistry) {
         topology.registerInternalTopology(this)
 
-        val testProperties = config.streamsProperties().apply {
-            this[STATE_DIR_CONFIG] = "build/kafka-streams/state"
-            this[MAX_TASK_IDLE_MS_CONFIG] = MAX_TASK_IDLE_MS_DISABLED
-        }
+        val testProperties = config.streamsProperties()
+//            .apply {
+//                this[STATE_DIR_CONFIG] = "build/kafka-streams/state"
+//                this[MAX_TASK_IDLE_MS_CONFIG] = MAX_TASK_IDLE_MS_DISABLED
+//            }
 
         internalStreams = TopologyTestDriver(internalTopology, testProperties)
         KafkaTestMetrics(registry, internalStreams::metrics)
