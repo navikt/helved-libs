@@ -19,7 +19,6 @@ data class StreamsConfig(
         this[CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG] = brokers
 
         ssl?.let { putAll(it.properties()) }
-        putAll(additionalProperties)
 
         /* Exception handler when leaving the stream, e.g. serialization */
         this[StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProducerErrHandler::class.java.name
@@ -50,6 +49,8 @@ data class StreamsConfig(
          * processing requires minimum three brokers
          */
         this[StreamsConfig.PROCESSING_GUARANTEE_CONFIG] = StreamsConfig.EXACTLY_ONCE_V2
+
+        putAll(additionalProperties)
     }
 }
 
