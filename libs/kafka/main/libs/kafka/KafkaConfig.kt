@@ -24,7 +24,7 @@ data class StreamsConfig(
         this[StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProducerErrHandler::class.java.name
 
         /*  Exception handler when entering the stream, e.g. deserialization */
-        this[StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumerErrHandler::class.java.name
+        this[StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeAgainErrorHandler::class.java.name
 
         // Configuration for resilience
         this[StreamsConfig.producerPrefix(ProducerConfig.ACKS_CONFIG)] = "all"

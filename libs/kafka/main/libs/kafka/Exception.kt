@@ -18,7 +18,7 @@ class ReplaceThread(message: Any) : RuntimeException(message.toString())
  *
  * Exceptions during deserialization, networks issues etc.
  */
-class ConsumerErrHandler : DeserializationExceptionHandler {
+class ConsumeAgainErrorHandler : DeserializationExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
     override fun handle(
@@ -28,7 +28,7 @@ class ConsumerErrHandler : DeserializationExceptionHandler {
     ): DeserializationExceptionHandler.DeserializationHandlerResponse {
         secureLog.warn(
             """
-               Exception deserializing record
+               Exception deserializing record. Retrying...
                Topic: ${record.topic()}
                Partition: ${record.partition()}
                Offset: ${record.offset()}
@@ -37,6 +37,27 @@ class ConsumerErrHandler : DeserializationExceptionHandler {
             exception
         )
         return DeserializationExceptionHandler.DeserializationHandlerResponse.FAIL
+    }
+}
+class ConsumeNextErrorHandler : DeserializationExceptionHandler {
+    override fun configure(configs: MutableMap<String, *>) {}
+
+    override fun handle(
+        context: ErrorHandlerContext,
+        record: ConsumerRecord<ByteArray, ByteArray>,
+        exception: java.lang.Exception
+    ): DeserializationExceptionHandler.DeserializationHandlerResponse {
+        secureLog.warn(
+            """
+               Exception deserializing record. Reading next record...
+               Topic: ${record.topic()}
+               Partition: ${record.partition()}
+               Offset: ${record.offset()}
+               TaskId: ${context.taskId()}
+            """.trimIndent(),
+            exception
+        )
+        return DeserializationExceptionHandler.DeserializationHandlerResponse.CONTINUE
     }
 }
 
