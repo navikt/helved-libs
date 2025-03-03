@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse as StreamHandler
 import org.apache.kafka.streams.errors.ProcessingExceptionHandler.ProcessingHandlerResponse as ProcessingHandler;
 import org.apache.kafka.streams.errors.DeserializationExceptionHandler.DeserializationHandlerResponse as ConsumeHandler;
+import org.apache.kafka.streams.errors.ProductionExceptionHandler.ProductionExceptionHandlerResponse as ProduceHandler; 
 
 
 private val secureLog = LoggerFactory.getLogger("secureLog")
@@ -18,14 +19,10 @@ class ReplaceThread(message: Any) : RuntimeException(message.toString())
  *
  * Exceptions during deserialization, networks issues etc.
  */
-class ConsumeAgainErrorHandler : DeserializationExceptionHandler {
+class ConsumeAgainHandler : DeserializationExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
-    override fun handle(
-        context: ErrorHandlerContext,
-        record: ConsumerRecord<ByteArray, ByteArray>,
-        exception: java.lang.Exception
-    ): ConsumeHandler {
+    override fun handle(context: ErrorHandlerContext, record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception): ConsumeHandler {
         secureLog.warn(
             """
                Exception deserializing record. Retrying...
@@ -39,14 +36,10 @@ class ConsumeAgainErrorHandler : DeserializationExceptionHandler {
         return ConsumeHandler.FAIL
     }
 }
-class ConsumeNextErrorHandler : DeserializationExceptionHandler {
+class ConsumeNextHandler : DeserializationExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
-    override fun handle(
-        context: ErrorHandlerContext,
-        record: ConsumerRecord<ByteArray, ByteArray>,
-        exception: java.lang.Exception
-    ): DeserializationExceptionHandler.DeserializationHandlerResponse {
+    override fun handle( context: ErrorHandlerContext, record: ConsumerRecord<ByteArray, ByteArray>, exception: Exception): ConsumeHandler {
         secureLog.warn(
             """
                Exception deserializing record. Reading next record...
@@ -57,10 +50,22 @@ class ConsumeNextErrorHandler : DeserializationExceptionHandler {
             """.trimIndent(),
             exception
         )
-        return DeserializationExceptionHandler.DeserializationHandlerResponse.CONTINUE
+        return ConsumeHandler.CONTINUE
     }
 }
 
+class ProcessAgainHandler: ProcessingExceptionHandler {
+    override fun configure(configs: MutableMap<String, *>) {}
+
+    override fun handle(
+        c: ErrorHandlerContext, 
+        r: org.apache.kafka.streams.processor.api.Record<*, *>, 
+        e: java.lang.Exception,
+    ): ProcessingHandler {
+        secureLog.error("Feil ved prosessering av record, logger og leser neste record", e)
+        return ProcessingHandler.FAIL
+    }
+}
 class ProcessNextHandler: ProcessingExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
@@ -83,13 +88,8 @@ class ProcessNextHandler: ProcessingExceptionHandler {
  *  2. shutdown indicidual stream instance
  *  3. shutdown all streams instances (with the same application-id
  */
-class ProcessingErrHandler : StreamsUncaughtExceptionHandler {
-    override fun handle(exception: Throwable): StreamHandler = logAndReplaceThread(exception)
-
-    private fun logAndReplaceThread(err: Throwable): StreamHandler {
-        secureLog.error("Feil ved prosessering av record, logger og leser neste record", err)
-        return StreamHandler.REPLACE_THREAD
-    }
+class UncaughtHandler: StreamsUncaughtExceptionHandler {
+    override fun handle(exception: Throwable): StreamHandler = logAndShutdownClient(exception)
 
     private fun logAndShutdownClient(err: Throwable): StreamHandler {
         secureLog.error("Uventet feil, logger og avslutter client", err)
@@ -102,16 +102,28 @@ class ProcessingErrHandler : StreamsUncaughtExceptionHandler {
  *
  * Exceptions due to serialization, networking etc.
  */
-class ProducerErrHandler : ProductionExceptionHandler {
+class ProduceAgainHandler : ProductionExceptionHandler {
     override fun configure(configs: MutableMap<String, *>) {}
 
     override fun handle(
-        context: ErrorHandlerContext?,
-        record: ProducerRecord<ByteArray, ByteArray>?,
-        exception: java.lang.Exception?
-    ): ProductionExceptionHandler.ProductionExceptionHandlerResponse {
-        secureLog.error("Feil i streams, logger og leser neste record", exception)
-        return ProductionExceptionHandler.ProductionExceptionHandlerResponse.FAIL
+        c: ErrorHandlerContext?,
+        r: ProducerRecord<ByteArray, ByteArray>?,
+        e: java.lang.Exception?
+    ): ProduceHandler {
+        secureLog.error("Feil i streams, logger og leser neste record", e)
+        return ProduceHandler.FAIL
     }
 }
 
+class ProduceNextHandler : ProductionExceptionHandler {
+    override fun configure(configs: MutableMap<String, *>) {}
+
+    override fun handle(
+        c: ErrorHandlerContext?,
+        r: ProducerRecord<ByteArray, ByteArray>?,
+        e: java.lang.Exception?
+    ): ProduceHandler {
+        secureLog.error("Feil i streams, logger og leser neste record", e)
+        return ProduceHandler.CONTINUE
+    }
+}

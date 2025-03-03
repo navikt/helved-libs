@@ -36,7 +36,7 @@ class KafkaStreams : Streams {
 
         internalStreams = org.apache.kafka.streams.KafkaStreams(internalTopology, config.streamsProperties())
         KafkaStreamsMetrics(internalStreams).bindTo(registry)
-        internalStreams.setUncaughtExceptionHandler(ProcessingErrHandler())
+        internalStreams.setUncaughtExceptionHandler(UncaughtHandler())
         internalStreams.setStateListener { state, _ -> if (state == RUNNING) initiallyStarted = true }
         internalStreams.setGlobalStateRestoreListener(RestoreListener())
         internalStreams.start()

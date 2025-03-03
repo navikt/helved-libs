@@ -20,12 +20,9 @@ data class StreamsConfig(
 
         ssl?.let { putAll(it.properties()) }
 
-        /* Exception handler when leaving the stream, e.g. serialization */
-        this[StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProducerErrHandler::class.java.name
-        this[StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG] = ProcessNextHandler::class.java.name
-
-        /*  Exception handler when entering the stream, e.g. deserialization */
-        this[StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeAgainErrorHandler::class.java.name
+        this[StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProduceAgainHandler::class.java.name
+        this[StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG ] = ProcessAgainHandler::class.java.name
+        this[StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeAgainHandler::class.java.name
 
         // Configuration for resilience
         this[StreamsConfig.producerPrefix(ProducerConfig.ACKS_CONFIG)] = "all"
