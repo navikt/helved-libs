@@ -22,13 +22,16 @@ private val mqLog = logger("mq")
 
 private val traceparents = mutableMapOf<String, String>()
 
-class MQProducer(
+interface MQProducer {
+    fun produce(message: String, config: JMSProducer.() -> Unit = {})
+}
+class DefaultMQProducer(
     private val mq: MQ,
     private val queue: MQQueue,
-) {
-    fun produce(
+): MQProducer {
+    override fun produce(
         message: String,
-        config: JMSProducer.() -> Unit = {},
+        config: JMSProducer.() -> Unit,
     ) {
         mqLog.info("Producing message on ${queue.baseQueueName}")
         return mq.transaction { ctx ->
@@ -91,7 +94,7 @@ abstract class MQConsumer(
 
     @Synchronized
     fun reconnect() {
-        if (lastReconnect.plusMinutes(1).isAfter(LocalDateTime.now())) return;
+        if (lastReconnect.plusMinutes(1).isAfter(LocalDateTime.now())) return
         try {
             runCatching { 
                 close() // we dont care if this fails (maybe already closed)

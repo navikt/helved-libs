@@ -4,7 +4,6 @@ import com.ibm.mq.jms.MQQueue
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.lang.Thread.sleep
 import javax.jms.TextMessage
 
 class MQTest {
@@ -12,7 +11,7 @@ class MQTest {
     private val mq = MQ(container.config)
     private val QUEUE_1 = MQQueue("DEV.QUEUE.1")
     private val consumer = Consumer()
-    private val producer = MQProducer(mq, QUEUE_1)
+    private val producer = DefaultMQProducer(mq, QUEUE_1)
 
     @AfterEach
     fun cleanup() {
