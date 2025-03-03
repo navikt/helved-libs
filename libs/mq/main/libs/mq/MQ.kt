@@ -23,7 +23,7 @@ private val mqLog = logger("mq")
 private val traceparents = mutableMapOf<String, String>()
 
 interface MQProducer {
-    fun produce(message: String, config: JMSProducer.() -> Unit = {})
+    fun produce(message: String, config: JMSProducer.() -> Unit = {}): String 
 }
 class DefaultMQProducer(
     private val mq: MQ,
@@ -32,7 +32,7 @@ class DefaultMQProducer(
     override fun produce(
         message: String,
         config: JMSProducer.() -> Unit,
-    ) {
+    ): String {
         mqLog.info("Producing message on ${queue.baseQueueName}")
         return mq.transaction { ctx ->
             ctx.clientID = UUID.randomUUID().toString()
@@ -43,6 +43,7 @@ class DefaultMQProducer(
             getTraceparent()?.let { traceparent ->
                 traceparents[message.jmsMessageID] = traceparent
             }
+            message.jmsMessageID
         }
     }
 }
