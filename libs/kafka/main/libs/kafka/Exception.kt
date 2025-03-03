@@ -74,10 +74,11 @@ class ProcessingErrHandler : StreamsUncaughtExceptionHandler {
     override fun handle(
         exception: Throwable,
     ): StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse {
-        return when (exception.cause) {
-            is ReplaceThread -> logAndReplaceThread(exception)
-            else -> logAndShutdownClient(exception)
-        }
+        return logAndReplaceThread(exception)
+        // return when (exception.cause) {
+        //     is ReplaceThread -> logAndReplaceThread(exception)
+        //     else -> logAndShutdownClient(exception)
+        // }
     }
 
     private fun logAndReplaceThread(

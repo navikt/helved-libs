@@ -22,6 +22,7 @@ data class StreamsConfig(
 
         /* Exception handler when leaving the stream, e.g. serialization */
         this[StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG] = ProducerErrHandler::class.java.name
+        this[StreamsConfig.PROCESSING_EXCEPTION_HANDLER_CLASS_CONFIG] = ProcessingErrHandler::class.java.name
 
         /*  Exception handler when entering the stream, e.g. deserialization */
         this[StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG] = ConsumeAgainErrorHandler::class.java.name
