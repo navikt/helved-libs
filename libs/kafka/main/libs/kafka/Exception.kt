@@ -2,12 +2,12 @@ package libs.kafka
 
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.streams.errors.DeserializationExceptionHandler
-import org.apache.kafka.streams.errors.ErrorHandlerContext
-import org.apache.kafka.streams.errors.ProductionExceptionHandler
-import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler
+import org.apache.kafka.streams.errors.*
 import org.slf4j.LoggerFactory
 import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse as StreamHandler
+import org.apache.kafka.streams.errors.ProcessingExceptionHandler.ProcessingHandlerResponse as ProcessingHandler;
+import org.apache.kafka.streams.errors.DeserializationExceptionHandler.DeserializationHandlerResponse as ConsumeHandler;
+
 
 private val secureLog = LoggerFactory.getLogger("secureLog")
 
@@ -25,7 +25,7 @@ class ConsumeAgainErrorHandler : DeserializationExceptionHandler {
         context: ErrorHandlerContext,
         record: ConsumerRecord<ByteArray, ByteArray>,
         exception: java.lang.Exception
-    ): DeserializationExceptionHandler.DeserializationHandlerResponse {
+    ): ConsumeHandler {
         secureLog.warn(
             """
                Exception deserializing record. Retrying...
@@ -36,7 +36,7 @@ class ConsumeAgainErrorHandler : DeserializationExceptionHandler {
             """.trimIndent(),
             exception
         )
-        return DeserializationExceptionHandler.DeserializationHandlerResponse.FAIL
+        return ConsumeHandler.FAIL
     }
 }
 class ConsumeNextErrorHandler : DeserializationExceptionHandler {
@@ -61,6 +61,19 @@ class ConsumeNextErrorHandler : DeserializationExceptionHandler {
     }
 }
 
+class ProcessNextHandler: ProcessingExceptionHandler {
+    override fun configure(configs: MutableMap<String, *>) {}
+
+    override fun handle(
+        c: ErrorHandlerContext, 
+        r: org.apache.kafka.streams.processor.api.Record<*, *>, 
+        e: java.lang.Exception,
+    ): ProcessingHandler {
+        secureLog.error("Feil ved prosessering av record, logger og leser neste record", e)
+        return ProcessingHandler.CONTINUE
+    }
+}
+
 /**
  * Processing exception handling (process records in the user code)
  *
@@ -71,26 +84,14 @@ class ConsumeNextErrorHandler : DeserializationExceptionHandler {
  *  3. shutdown all streams instances (with the same application-id
  */
 class ProcessingErrHandler : StreamsUncaughtExceptionHandler {
-    override fun handle(
-        exception: Throwable,
-    ): StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse {
-        return logAndReplaceThread(exception)
-        // return when (exception.cause) {
-        //     is ReplaceThread -> logAndReplaceThread(exception)
-        //     else -> logAndShutdownClient(exception)
-        // }
-    }
+    override fun handle(exception: Throwable): StreamHandler = logAndReplaceThread(exception)
 
-    private fun logAndReplaceThread(
-        err: Throwable,
-    ): StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse {
+    private fun logAndReplaceThread(err: Throwable): StreamHandler {
         secureLog.error("Feil ved prosessering av record, logger og leser neste record", err)
         return StreamHandler.REPLACE_THREAD
     }
 
-    private fun logAndShutdownClient(
-        err: Throwable,
-    ): StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse {
+    private fun logAndShutdownClient(err: Throwable): StreamHandler {
         secureLog.error("Uventet feil, logger og avslutter client", err)
         return StreamHandler.SHUTDOWN_CLIENT
     }
