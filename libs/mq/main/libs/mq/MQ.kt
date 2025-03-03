@@ -47,7 +47,7 @@ class DefaultMQProducer(
     }
 }
 
-internal interface MQListener {
+interface MQListener {
     fun onMessage(message: TextMessage)
 }
 
