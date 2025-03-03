@@ -42,7 +42,7 @@ class StreamsMock : Streams {
     }
 
     override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> = StateStore(
-        internalStreams.getTimestampedKeyValueStore(store.name)
+        internalStreams.getKeyValueStore(store.name)
     )
 
     fun <K: Any, V : Any> testTopic(topic: Topic<K, V>): TestTopic<K, V> =

@@ -53,7 +53,7 @@ class KafkaStreams : Streams {
 
     override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> = StateStore(
         internalStreams.store(
-            StoreQueryParameters.fromNameAndType<ReadOnlyKeyValueStore<K, ValueAndTimestamp<V>>>(
+            StoreQueryParameters.fromNameAndType<ReadOnlyKeyValueStore<K, V>>(
                 store.name,
                 QueryableStoreTypes.keyValueStore()
             )
