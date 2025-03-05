@@ -23,7 +23,6 @@ import javax.jms.TemporaryTopic
 import javax.jms.TextMessage
 import javax.jms.Topic
 
-
 class MQFake(override val context: JMSContext = JMSContextFake()) : MQ {
     override fun depth(queue: MQQueue): Int = TODO("fake")
 
@@ -37,11 +36,10 @@ class MQFake(override val context: JMSContext = JMSContextFake()) : MQ {
 
 }
 
-class JMSContextFake() : JMSContext {
+class JMSContextFake(private val onReplyTo: (TextMessage) -> TextMessage = { it }) : JMSContext {
     val received: MutableList<Message> = mutableListOf()
     var replyTo: String? = null
     lateinit var consumer: JMSConsumer
-
 
     override fun createConsumer(p0: Destination): JMSConsumer {
         consumer = JMSConsumerFake()
@@ -93,7 +91,7 @@ class JMSContextFake() : JMSContext {
     inner class JMSProducerFake : JMSProducer {
         override fun send(p0: Destination, p1: Message): JMSProducer {
             if (replyTo != null) {
-                consumer.messageListener.onMessage(p1)
+                consumer.messageListener.onMessage(onReplyTo(p1 as TextMessage))
             }
             received.add(p1)
             return this
@@ -151,7 +149,6 @@ class JMSContextFake() : JMSContext {
         override fun setJMSType(p0: String?): JMSProducer = TODO("fake")
         override fun getJMSType(): String = TODO("fake")
         override fun getJMSReplyTo(): Destination = TODO("fake")
-
     }
 }
 
