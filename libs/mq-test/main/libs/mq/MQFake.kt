@@ -65,7 +65,7 @@ class JMSContextFake(private val onReplyTo: (TextMessage) -> TextMessage = { it 
     override fun createObjectMessage(p0: Serializable?): ObjectMessage = TODO("fake")
     override fun createStreamMessage(): StreamMessage = TODO("fake")
     override fun createTextMessage(): TextMessage = TODO("fake")
-    override fun createTextMessage(p0: String?): TextMessage = TextMessageFake()
+    override fun createTextMessage(p0: String): TextMessage = TextMessageFake(p0)
     override fun getTransacted(): Boolean = TODO("fake")
     override fun getSessionMode(): Int = TODO("fake")
     override fun commit() = TODO("fake")
@@ -152,7 +152,7 @@ class JMSContextFake(private val onReplyTo: (TextMessage) -> TextMessage = { it 
     }
 }
 
-class TextMessageFake : TextMessage {
+class TextMessageFake(private val msg: String) : TextMessage {
     var correlationID: UUID = UUID.randomUUID()
 
     override fun getJMSCorrelationID(): String {
@@ -163,6 +163,8 @@ class TextMessageFake : TextMessage {
         return correlationID.toString()
     }
 
+    override fun getText(): String = msg
+    override fun setText(msg: String) = TODO("fake")
     override fun setJMSMessageID(id: String?) = TODO("fake")
     override fun getJMSTimestamp(): Long = TODO("fake")
     override fun setJMSTimestamp(timestamp: Long) = TODO("fake")
@@ -210,8 +212,6 @@ class TextMessageFake : TextMessage {
     override fun clearBody() = TODO("fake")
     override fun <T : Any?> getBody(c: Class<T>?): T = TODO("fake")
     override fun isBodyAssignableTo(c: Class<*>?): Boolean = TODO("fake")
-    override fun setText(string: String?) = TODO("fake")
-    override fun getText(): String = TODO("fake")
 
 }
 
