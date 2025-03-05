@@ -23,17 +23,19 @@ private val mqLog = logger("mq")
 private val traceparents = mutableMapOf<String, String>()
 
 interface MQProducer {
-    fun produce(message: String, config: JMSProducer.() -> Unit = {}): String 
+    fun produce(message: String, config: JMSProducer.() -> Unit = {}): String
 }
+
 class DefaultMQProducer(
     private val mq: MQ,
-    private val queue: MQQueue,
-): MQProducer {
+    queueName: String,
+) : MQProducer {
+    private val queue = MQQueue(queueName)
     override fun produce(
         message: String,
         config: JMSProducer.() -> Unit,
     ): String {
-        mqLog.info("Producing message on ${queue.baseQueueName}")
+        mqLog.info("Producing message on $queue")
         return mq.transaction { ctx ->
             ctx.clientID = UUID.randomUUID().toString()
             val producer = ctx.createProducer().apply(config)
@@ -48,21 +50,23 @@ class DefaultMQProducer(
     }
 }
 
-interface MQListener {
-    fun onMessage(message: TextMessage)
-}
+interface MQConsumer: AutoCloseable, ExceptionListener {
+    //fun onMessage(message: TextMessage)
+    fun start()
+    }
 
-abstract class MQConsumer(
+open class DefaultMQConsumer(
     private val mq: MQ,
     private val queue: MQQueue,
-) : AutoCloseable, MQListener, ExceptionListener {
+    private val onMessage: (TextMessage) -> Unit
+) : MQConsumer {
     private var context = createContext()
     private var consumer = createConsumer()
 
     private fun createContext(): JMSContext {
         return mq.context.apply {
             autoStart = false
-            exceptionListener = this@MQConsumer
+            exceptionListener = this@DefaultMQConsumer
         }
     }
 
@@ -97,25 +101,21 @@ abstract class MQConsumer(
     fun reconnect() {
         if (lastReconnect.plusMinutes(1).isAfter(LocalDateTime.now())) return
         try {
-            runCatching { 
+            runCatching {
                 close() // we dont care if this fails (maybe already closed)
             }
-            context = createContext() 
+            context = createContext()
             consumer = createConsumer()
             start()
             mqLog.info("Sucessfully reconnected consumer ${queue.baseQueueName}")
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             mqLog.error("Failed to reconnect", e)
         } finally {
             lastReconnect = LocalDateTime.now()
         }
     }
 
-    fun depth(): Int {
-        return mq.depth(queue)
-    }
-
-    fun start() {
+    override fun start() {
         context.start()
     }
 
@@ -125,7 +125,14 @@ abstract class MQConsumer(
     }
 }
 
-class MQ(private val config: MQConfig) {
+interface MQ {
+    fun depth(queue: MQQueue): Int
+    fun <T : Any> transaction(block: (JMSContext) -> T): T
+    fun <T : Any> transacted(ctx: JMSContext, block: () -> T): T
+    val context: JMSContext
+}
+
+class DefaultMQ(private val config: MQConfig) : MQ {
     private val factory: MQConnectionFactory = MQConnectionFactory().apply {
         hostName = config.host
         port = config.port
@@ -140,14 +147,14 @@ class MQ(private val config: MQConfig) {
         // clientReconnectTimeout = 600 // reconnection attempts for 10 minutes
     }
 
-    internal val context: JMSContext
+    override val context: JMSContext
         get() = factory.createContext(
             config.username,
             config.password,
             JMSContext.SESSION_TRANSACTED
         )
 
-    fun depth(queue: MQQueue): Int {
+    override fun depth(queue: MQQueue): Int {
         mqLog.debug("Checking queue depth for ${queue.baseQueueName}")
         return transaction { ctx ->
             ctx.createBrowser(queue).use { browse ->
@@ -156,7 +163,7 @@ class MQ(private val config: MQConfig) {
         }
     }
 
-    internal fun <T : Any> transacted(ctx: JMSContext, block: () -> T): T {
+    override fun <T : Any> transacted(ctx: JMSContext, block: () -> T): T {
         mqLog.debug("MQ transaction created {}", ctx)
 
         val result = runCatching {
@@ -173,7 +180,7 @@ class MQ(private val config: MQConfig) {
         return result.getOrThrow()
     }
 
-    fun <T : Any> transaction(block: (JMSContext) -> T): T =
+    override fun <T : Any> transaction(block: (JMSContext) -> T): T =
         context.use { ctx ->
             transacted(ctx) {
                 block(ctx)
