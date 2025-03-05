@@ -8,7 +8,7 @@ import libs.kafka.processor.StateProcessor
 import org.apache.kafka.streams.TestInputTopic
 import org.apache.kafka.streams.TestOutputTopic
 import org.apache.kafka.streams.TopologyTestDriver
-import org.apache.kafka.streams.state.*
+import org.apache.kafka.streams.state.TimestampedKeyValueStore
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -32,6 +32,10 @@ internal object Tables {
     val C = Table(Topics.C)
 }
 
+internal object Stores {
+    val F = Store("F", string())
+}
+
 internal class Mock : Streams {
     private lateinit var internalTopology: org.apache.kafka.streams.Topology
     private lateinit var internalStreams: TopologyTestDriver
@@ -52,11 +56,15 @@ internal class Mock : Streams {
         internalStreams = TopologyTestDriver(internalTopology)
     }
 
-    internal fun <K: Any, V : Any> inputTopic(topic: Topic<K, V>): TestInputTopic<K, V> =
+    internal fun <K : Any, V : Any> inputTopic(topic: Topic<K, V>): TestInputTopic<K, V> =
         internalStreams.createInputTopic(topic.name, topic.serdes.key.serializer(), topic.serdes.value.serializer())
 
-    internal fun <K: Any, V : Any> outputTopic(topic: Topic<K, V>): TestOutputTopic<K, V> =
-        internalStreams.createOutputTopic(topic.name, topic.serdes.key.deserializer(), topic.serdes.value.deserializer())
+    internal fun <K : Any, V : Any> outputTopic(topic: Topic<K, V>): TestOutputTopic<K, V> =
+        internalStreams.createOutputTopic(
+            topic.name,
+            topic.serdes.key.deserializer(),
+            topic.serdes.value.deserializer()
+        )
 
 
     internal fun advanceWallClockTime(duration: Duration) =
@@ -69,7 +77,7 @@ internal class Mock : Streams {
         this.internalTopology = internalTopology
     }
 
-    override fun <K: Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> =
+    override fun <K : Any, V : Any> getStore(store: Store<K, V>): StateStore<K, V> =
         StateStore(internalStreams.getKeyValueStore<K, V>(store.name))
 
     override fun close() = internalStreams.close()
@@ -77,13 +85,14 @@ internal class Mock : Streams {
 
 internal val Int.ms get() = toDuration(DurationUnit.MILLISECONDS)
 
-internal fun <K: Any, V> TestInputTopic<K, V>.produce(key: K, value: V): TestInputTopic<K, V> =
+internal fun <K : Any, V> TestInputTopic<K, V>.produce(key: K, value: V): TestInputTopic<K, V> =
     pipeInput(key, value).let { this }
 
-internal fun <K: Any, V> TestInputTopic<K, V>.produceTombstone(key: K): TestInputTopic<K, V> =
+internal fun <K : Any, V> TestInputTopic<K, V>.produceTombstone(key: K): TestInputTopic<K, V> =
     pipeInput(key, null).let { this }
 
-class CustomProcessorWithTable(table: KTable<String, String>) : StateProcessor<String, String, String, String>("custom-join", table) {
+class CustomProcessorWithTable(table: KTable<String, String>) :
+    StateProcessor<String, String, String, String>("custom-join", table) {
     override fun process(
         metadata: ProcessorMetadata,
         store: TimestampedKeyValueStore<String, String>,

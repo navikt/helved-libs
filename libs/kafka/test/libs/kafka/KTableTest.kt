@@ -47,4 +47,25 @@ class KTableTest {
         assertEquals("awesomesauce", result["1"])
         assertEquals("niceprice", result["2"])
     }
+
+    @Test
+    fun `join state store with ktable`() {
+        val kafka = Mock.withTopology {
+            val b = consume(Tables.B)
+            val f = consume(Topics.A)
+                .map { v -> v + v }
+                .materialize(Stores.F)
+            f.join(b)
+                .filter { (_, b) -> b != null }
+                .map { (f, b) -> f + b }
+                .produce(Topics.C)
+        }
+
+        kafka.inputTopic(Topics.A).produce("1", "sauce")
+        kafka.inputTopic(Topics.B).produce("1", "awesome")
+
+        val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
+        assertEquals(1, result.size)
+        assertEquals("saucesauceawesome", result["1"])
+    }
 }
