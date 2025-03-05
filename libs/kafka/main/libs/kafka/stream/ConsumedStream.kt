@@ -64,27 +64,17 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return MappedStream(valuedStream, namedSupplier)
     }
 
-    fun flatMapPreserveType(mapper: (K, V) -> Iterable<V>): ConsumedStream<K, V> {
-        val fusedStream = stream.flatMapValues { key, value -> mapper(key, value) }
-        return ConsumedStream(fusedStream, namedSupplier)
-    }
-
-    fun flatMapKeyAndValuePreserveType(mapper: (K, V) -> Iterable<KeyValue<K, V>>): ConsumedStream<K, V> {
-        val fusedStream = stream.flatMap { key, value -> mapper(key, value).map { it.toInternalKeyValue() } }
-        return ConsumedStream(fusedStream, namedSupplier)
-    }
-
     fun <U : Any> flatMap(mapper: (K, V) -> Iterable<U>): MappedStream<K, U> {
         val fusedStream = stream.flatMapValues { key, value -> mapper(key, value) }
         return MappedStream(fusedStream, namedSupplier)
     }
 
-    fun <U : Any> flatMapKeyAndValue(mapper: (K, V) -> Iterable<KeyValue<K, U>>): MappedStream<K, U> {
+    fun <K2: Any, U : Any> flatMapKeyAndValue(mapper: (K, V) -> Iterable<KeyValue<K2, U>>): MappedStream<K2, U> {
         val fusedStream = stream.flatMap { key, value -> mapper(key, value).map { it.toInternalKeyValue() } }
         return MappedStream(fusedStream, namedSupplier)
     }
 
-    fun <U : Any> mapKeyAndValue(mapper: (K, V) -> KeyValue<K, U>): MappedStream<K, U> {
+    fun <K2: Any, U : Any> mapKeyAndValue(mapper: (K, V) -> KeyValue<K2, U>): MappedStream<K2, U> {
         val fusedStream = stream.map { key, value -> mapper(key, value).toInternalKeyValue() }
         return MappedStream(fusedStream, namedSupplier)
     }

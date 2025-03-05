@@ -173,38 +173,6 @@ internal class ConsumedStreamTest {
     }
 
     @Test
-    fun `flat map and preserve the type`() {
-        val kafka = Mock.withTopology {
-            consume(Topics.A)
-                .flatMapPreserveType { _, value -> listOf(value, value) }
-                .produce(Topics.C)
-        }
-
-        kafka.inputTopic(Topics.A).produce("1", "a")
-
-        val result = kafka.outputTopic(Topics.C).readKeyValuesToList()
-        assertEquals(2, result.size)
-        assertEquals(2, result.count { kv -> kv.key == "1" })
-        assertTrue { result.all { kv -> kv.value == "a" } }
-    }
-
-    @Test
-    fun `flat map key and value and preserve the type`() {
-        val kafka = Mock.withTopology {
-            consume(Topics.A)
-                .flatMapKeyAndValuePreserveType { key, value -> listOf(KeyValue(key, value), KeyValue(value, key)) }
-                .produce(Topics.C)
-        }
-
-        kafka.inputTopic(Topics.A).produce("1", "a")
-
-        val result = kafka.outputTopic(Topics.C).readKeyValuesToMap()
-        assertEquals(2, result.size)
-        assertEquals("1", result["a"])
-        assertEquals("a", result["1"])
-    }
-
-    @Test
     fun `flat map`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
