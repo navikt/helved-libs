@@ -210,10 +210,16 @@ class JMSContextFake() : JMSContext {
 }
 
 class TextMessageFake : TextMessage {
+    var correlationID: UUID = UUID.randomUUID()
+
     override fun getJMSCorrelationID(): String {
-        return UUID.randomUUID().toString()
+        return correlationID.toString()
     }
-    override fun getJMSMessageID(): String = TODO("fake")
+
+    override fun getJMSMessageID(): String {
+        return correlationID.toString()
+    }
+
     override fun setJMSMessageID(id: String?) = TODO("fake")
     override fun getJMSTimestamp(): Long = TODO("fake")
     override fun setJMSTimestamp(timestamp: Long) = TODO("fake")
