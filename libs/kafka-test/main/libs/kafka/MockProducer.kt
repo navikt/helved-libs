@@ -15,13 +15,14 @@ class MockProducer<K : Any, V : Any>(
     private val producedKeys = mutableSetOf<K>()
 
     override fun send(record: ProducerRecord<K, V>, callback: Callback): Future<RecordMetadata> {
-        val metadata = RecordMetadata(TopicPartition(record.topic(), 0), 0L, 0, System.currentTimeMillis(), 0, 0)
-        if (producedKeys.contains(record.key())) {
-            return CompletableFuture.completedFuture(metadata)
-        }
-        producedKeys.add(record.key())
-        testTopic.produce(record.key(), record::value)
-        callback.onCompletion(metadata, null)
-        return CompletableFuture.completedFuture(metadata)
+        // val metadata = RecordMetadata(TopicPartition(record.topic(), 0), 0L, 0, System.currentTimeMillis(), 0, 0)
+        // if (producedKeys.contains(record.key())) {
+        //     return CompletableFuture.completedFuture(metadata)
+        // }
+        // producedKeys.add(record.key())
+        // testTopic.produce(record.key(), record::value)
+        // callback.onCompletion(metadata, null)
+        // return CompletableFuture.completedFuture(metadata)
+        return super.send(record, callback)
     }
 }
