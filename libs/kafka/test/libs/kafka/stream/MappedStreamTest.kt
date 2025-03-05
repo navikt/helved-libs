@@ -231,7 +231,7 @@ internal class MappedStreamTest {
     fun `rekey with mapKeyValue`() {
         val kafka = Mock.withTopology {
             consume(Topics.A)
-                .mapKeyAndValue { key, value -> KeyValue(key = "test:$key", value = "$value$value") }
+                .mapKeyAndValue { key, value -> "test:$key" to "$value$value" }
                 .produce(Topics.C)
         }
 

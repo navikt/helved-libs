@@ -18,6 +18,10 @@ data class KeyValue<K, V>(
     }
 }
 
+fun <K, V> Pair<K, V>.toInternalKeyValue(): KeyValue<K, V> {
+    return KeyValue(first, second)
+}
+
 class Log(name: String) {
     private val logger = logger(name)
 

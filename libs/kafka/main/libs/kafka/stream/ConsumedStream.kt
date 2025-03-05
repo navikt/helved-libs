@@ -74,7 +74,7 @@ class ConsumedStream<K: Any, V : Any> internal constructor(
         return MappedStream(fusedStream, namedSupplier)
     }
 
-    fun <K2: Any, U : Any> mapKeyAndValue(mapper: (K, V) -> KeyValue<K2, U>): MappedStream<K2, U> {
+    fun <K2: Any, U : Any> mapKeyAndValue(mapper: (K, V) -> Pair<K2, U>): MappedStream<K2, U> {
         val fusedStream = stream.map { key, value -> mapper(key, value).toInternalKeyValue() }
         return MappedStream(fusedStream, namedSupplier)
     }
