@@ -2,7 +2,7 @@ dependencies {
     implementation(project(":libs:utils"))
 
     // API (core tracing functionality)
-    api("io.opentelemetry:opentelemetry-api:1.47.0")
+    api("io.opentelemetry:opentelemetry-api:1.48.0")
 
     // SDK (needed for creating spans if no external collector is set)
     // api("io.opentelemetry:opentelemetry-sdk:1.46.0")
