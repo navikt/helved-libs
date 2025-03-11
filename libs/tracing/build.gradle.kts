@@ -11,5 +11,5 @@ dependencies {
     // api("io.opentelemetry:opentelemetry-exporter-otlp:1.46.0")
 
     // Context Propagation (for managing spans across threads/coroutines)
-    api("io.opentelemetry:opentelemetry-context:1.47.0")
+    api("io.opentelemetry:opentelemetry-context:1.48.0")
 }
