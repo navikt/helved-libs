@@ -6,9 +6,9 @@ import no.nav.system.os.entiteter.typer.simpletypes.FradragTillegg
 import no.nav.system.os.entiteter.typer.simpletypes.KodeStatusLinje
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.SimulerBeregningRequest
 import org.junit.jupiter.api.Test
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.ObjectFactory as RootFactory ;
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpservicegrensesnitt.ObjectFactory as RootFactory
 import no.nav.system.os.entiteter.oppdragskjema.ObjectFactory as OppdragFactory
-import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory;
+import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.ObjectFactory
 import no.nav.system.os.tjenester.simulerfpservice.simulerfpserviceservicetypes.Oppdragslinje
 import org.junit.jupiter.api.Assertions.assertEquals
 import java.math.BigDecimal
@@ -134,7 +134,7 @@ private val xmlString: String = """<ns3:simulerBeregningRequest xmlns:ns2="http:
             <fagsystemId>1</fagsystemId>
             <utbetFrekvens>MND</utbetFrekvens>
             <oppdragGjelderId>12345678910</oppdragGjelderId>
-            <datoOppdragGjelderFom>1999-01-01</datoOppdragGjelderFom>
+            <datoOppdragGjelderFom>2000-01-01</datoOppdragGjelderFom>
             <saksbehId>Z999999</saksbehId>
             <ns2:enhet>
                 <typeEnhet>BOS</typeEnhet>
