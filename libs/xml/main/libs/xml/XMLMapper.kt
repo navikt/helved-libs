@@ -24,8 +24,8 @@ class XMLMapper<T : Any>(
     private val inputFactory get() = XMLInputFactory.newInstance()
 
     companion object {
-        inline operator fun <reified T : Any> invoke(): XMLMapper<T> {
-            return XMLMapper(T::class)
+        inline operator fun <reified T : Any> invoke(enableEncodingDeclaration: Boolean = true): XMLMapper<T> {
+            return XMLMapper(T::class, enableEncodingDeclaration)
         }
     }
 
