@@ -1,6 +1,7 @@
 package libs.xml
 
 import jakarta.xml.bind.JAXBContext
+import jakarta.xml.bind.Marshaller
 import jakarta.xml.bind.Marshaller.JAXB_FORMATTED_OUTPUT
 import java.io.StringReader
 import java.io.StringWriter
@@ -10,9 +11,15 @@ import javax.xml.stream.XMLInputFactory
 import javax.xml.transform.stream.StreamSource
 import kotlin.reflect.KClass
 
-class XMLMapper<T : Any>(private val type: KClass<T>) {
+class XMLMapper<T : Any>(
+    private val type: KClass<T>,
+    private val enableEncodingDeclaration: Boolean = true, // <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+) {
     private val context get() = JAXBContext.newInstance(type.java)
-    private val marshaller get() = context.createMarshaller().apply { setProperty(JAXB_FORMATTED_OUTPUT, true) }
+    private val marshaller get() = context.createMarshaller().apply {
+        setProperty(JAXB_FORMATTED_OUTPUT, true)
+        if (!enableEncodingDeclaration) setProperty(Marshaller.JAXB_FRAGMENT, true)
+    }
     private val unmarshaller get() = context.createUnmarshaller()
     private val inputFactory get() = XMLInputFactory.newInstance()
 

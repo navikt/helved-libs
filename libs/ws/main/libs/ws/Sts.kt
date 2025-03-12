@@ -8,13 +8,14 @@ import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import libs.cache.Token
-import libs.cache.TokenCache
-import libs.http.HttpClientFactory
 import java.net.URL
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
+import libs.cache.Token
+import libs.cache.TokenCache
+import libs.http.HttpClientFactory
+import libs.utils.secureLog
 
 interface Sts {
     suspend fun samlToken(): SamlToken
@@ -85,7 +86,10 @@ class StsClient(
                 return from(json)
             }
 
-            else -> error("Unexpected status code: $status when calling ${request.url}")
+            else -> {
+                secureLog.error("Unexpected status code: $status when calling ${request.url} {bodyAsText()}")
+                error("Unexpected status code: $status when calling ${request.url}")
+            }
         }
     }
 
