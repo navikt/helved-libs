@@ -9,8 +9,8 @@ import javax.jms.TextMessage
 
 class DefaultMQTest {
     private val mq = MQFake()
-    private val consumer = FakeConsumerService(mq, "reply")
-    private val producer = DefaultMQProducer(mq, "request")
+    private val consumer = FakeConsumerService(mq, MQQueue("reply"))
+    private val producer = DefaultMQProducer(mq, MQQueue("request"))
 
     @AfterEach
     fun cleanup() {
@@ -43,8 +43,8 @@ class DefaultMQTest {
     }
 }
 
-class FakeConsumerService(mq: MQ, queuename: String) : DefaultMQConsumer(
-    mq, MQQueue(queuename),
+class FakeConsumerService(mq: MQ, queue: MQQueue) : DefaultMQConsumer(
+    mq, queue,
     FakeConsumerService::onMessage
 ), AutoCloseable {
     companion object {

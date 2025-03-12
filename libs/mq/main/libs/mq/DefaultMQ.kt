@@ -28,9 +28,8 @@ interface MQProducer {
 
 class DefaultMQProducer(
     private val mq: MQ,
-    queueName: String,
+    private val queue: MQQueue,
 ) : MQProducer {
-    private val queue = MQQueue(queueName)
     override fun produce(
         message: String,
         config: JMSProducer.() -> Unit,
