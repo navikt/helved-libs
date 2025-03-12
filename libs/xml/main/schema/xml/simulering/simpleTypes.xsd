@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema targetNamespace="http://nav.no/system/os/entiteter/typer/simpleTypes"
-		   xmlns:typer="http://nav.no/system/os/entiteter/typer/simpleTypes"
-		   version="1.0" 
-           xmlns:xs="http://www.w3.org/2001/XMLSchema"
-		   >
+		   version="1.0"
+		   xmlns:xs="http://www.w3.org/2001/XMLSchema"
+>
 
    	<xs:annotation>
 		<xs:documentation>Oppdrag spesifikasjon Simple Types som blir brukt i pÃ¥ attribut/felt nivÃ¥ for Oppdrag</xs:documentation>
@@ -230,12 +229,19 @@
 		</xs:annotation>
 		<xs:restriction base="xs:string">
 			<xs:enumeration value="DAG" />
+			<xs:enumeration value="DAG7" />
 			<xs:enumeration value="UKE" />
 			<xs:enumeration value="14DB" />
 			<xs:enumeration value="MND" />
 			<xs:enumeration value="AAR" />
 			<xs:enumeration value="ENG" />
 			<xs:enumeration value="AKTO" />
+			<xs:enumeration value="LOPD" />
+			<xs:enumeration value="LOPM" />
+			<xs:enumeration value="LOPP" />
+			<xs:enumeration value="SALD" />
+			<xs:enumeration value="SALM" />
+			<xs:enumeration value="SALP" />
 		</xs:restriction>
 	</xs:simpleType>
 	<xs:simpleType name="antallSats">

@@ -6,7 +6,7 @@
 		   xmlns:beregningSkjema="http://nav.no/system/os/entiteter/beregningSkjema"
 		   >
 		   
-    <xs:import namespace="http://nav.no/system/os/entiteter/typer/simpleTypes" schemaLocation="types.xsd"/>
+    <xs:import namespace="http://nav.no/system/os/entiteter/typer/simpleTypes" schemaLocation="simpleTypes.xsd"/>
 	
 	<xs:annotation>
 		<xs:documentation>Beregning entiteter</xs:documentation>
@@ -62,9 +62,9 @@
 				<xs:element name="behandlendeEnhet"   type="typer:enhet" />
 				<xs:element name="oppdragsId"         type="typer:oppdragsId" />				
 				<xs:element name="fagsystemId"        type="typer:fagsystemId" />				
-				<xs:element name="kid"                type="typer:kid" />				
+				<xs:element name="kid"                type="typer:kid" minOccurs="0" />
 				<xs:element name="utbetalesTilId"     type="typer:fnrOrgnr" />				
-				<xs:element name="utbetalesTilNavn"   type="typer:navn" />								
+				<xs:element name="utbetalesTilNavn"   type="typer:navn" minOccurs="0" />
 				<xs:element name="bilagsType"         type="typer:kodeBilagsType" />				
 				<xs:element name="forfall"            type="typer:dato" />				
 				<xs:element name="feilkonto"          type="xs:boolean" />								
@@ -97,24 +97,24 @@
 				<xs:element name="behandlingskode"       type="typer:string1" />
 				<xs:element name="belop"                 type="typer:belop" />
 				<xs:element name="trekkVedtakId"         type="typer:trekkVedtakId" />
-				<xs:element name="stonadId"              type="typer:stonadId" />
-				<xs:element name="korrigering"           type="typer:string1" />
+				<xs:element name="stonadId"              type="typer:stonadId" minOccurs="0" />
+				<xs:element name="korrigering"           type="typer:string1" minOccurs="0" />
 				<xs:element name="tilbakeforing"         type="xs:boolean" />
 				<xs:element name="linjeId"               type="typer:linjeId" />
 				<xs:element name="sats"                  type="typer:sats" />
-				<xs:element name="typeSats"              type="typer:typeSats" />
+				<xs:element name="typeSats"              type="typer:typeSats" minOccurs="0" />
 				<xs:element name="antallSats"            type="typer:antallSats" />
 				<xs:element name="saksbehId"             type="typer:saksbehId" />
 				<xs:element name="uforeGrad"             type="typer:grad" />
-				<xs:element name="kravhaverId"           type="typer:fnrOrgnr" />
-				<xs:element name="delytelseId"           type="typer:delytelseId" />
+				<xs:element name="kravhaverId"           type="typer:fnrOrgnr" minOccurs="0" />
+				<xs:element name="delytelseId"           type="typer:delytelseId" minOccurs="0" />
 				<xs:element name="bostedsenhet"          type="typer:enhet" />
-				<xs:element name="skykldnerId"           type="typer:fnrOrgnr" />
+				<xs:element name="skykldnerId"           type="typer:fnrOrgnr" minOccurs="0" />
 				<xs:element name="klassekode"            type="typer:kodeKlasse" />
 				<xs:element name="klasseKodeBeskrivelse" type="typer:kodeKlasseBeskrivelse" />
 				<xs:element name="typeKlasse"            type="typer:typeKlasse" />
-				<xs:element name="typeKlasseBeskrivelse" type="typer:typeKlasseBeskrivelse" />		
-				<xs:element name="refunderesOrgNr"       type="typer:fnrOrgnr" />				
+				<xs:element name="typeKlasseBeskrivelse" type="typer:typeKlasseBeskrivelse" />
+				<xs:element name="refunderesOrgNr"       type="typer:fnrOrgnr" minOccurs="0" />
 			</xs:sequence>
 		</xs:complexType>
 	</xs:element>
