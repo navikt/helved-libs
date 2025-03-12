@@ -21,7 +21,8 @@ interface StreamSerde<T> : Serde<T>
 
 fun string() = Serdes(StringSerde, StringSerde)
 inline fun <reified V: Any> json() = Serdes(StringSerde, JsonSerde.jackson<V>())
-inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.serde<V>())
+inline fun <reified V: Any> xml() = Serdes(StringSerde, XmlSerde.xml<V>())
+inline fun <reified V: Any> jaxb() = Serdes(StringSerde, XmlSerde.jaxb<V>())
 
 object StringSerde : StreamSerde<String> {
     private val internalSerde = Serdes.StringSerde()
@@ -65,8 +66,14 @@ class JacksonDeserializer<T : Any>(private val kclass: KClass<T>) : Deserializer
 }
 
 object XmlSerde {
-    inline fun <reified V : Any> serde(): StreamSerde<V> = object : StreamSerde<V> {
+    inline fun <reified V : Any> xml(): StreamSerde<V> = object : StreamSerde<V> {
         private val mapper: XMLMapper<V> = XMLMapper()
+        override fun serializer(): Serializer<V> = XmlSerializer(mapper)
+        override fun deserializer(): Deserializer<V> = XmlDeserializer(mapper)
+    }
+
+    inline fun <reified V : Any> jaxb(): StreamSerde<V> = object : StreamSerde<V> {
+        private val mapper: XMLMapper<V> = XMLMapper(false)
         override fun serializer(): Serializer<V> = XmlSerializer(mapper)
         override fun deserializer(): Deserializer<V> = XmlDeserializer(mapper)
     }
@@ -87,4 +94,3 @@ class XmlDeserializer<T : Any>(private val mapper: XMLMapper<T>) : Deserializer<
         }
     }
 }
-
