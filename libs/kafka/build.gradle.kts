@@ -4,7 +4,7 @@ dependencies {
     implementation(project(":libs:utils"))
     implementation(project(":libs:xml"))
 
-    implementation("io.micrometer:micrometer-registry-prometheus:1.14.4")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.14.5")
     implementation("org.apache.kafka:kafka-streams:3.9.0")
 
     implementation("ch.qos.logback:logback-classic:1.5.17")
