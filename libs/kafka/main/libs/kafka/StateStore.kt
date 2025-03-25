@@ -5,10 +5,14 @@ import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 
 typealias StateStoreName = String
 
-data class Store<K : Any, V : Any>(
+open class Store<K : Any, V : Any> private constructor(
+    private val sourceTable: Table<K, V>?,
     val name: StateStoreName,
     val serde: Serdes<K, V>
-)
+) {
+    constructor(sourceTable: Table<K, V>): this(sourceTable, sourceTable.stateStoreName, sourceTable.serdes)
+    constructor(name: StateStoreName, serde: Serdes<K, V>): this(null, name, serde)
+}
 
 class KStore<K : Any, V : Any>(
     val store: Store<K, V>,
