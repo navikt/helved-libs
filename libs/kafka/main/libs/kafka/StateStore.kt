@@ -1,6 +1,7 @@
 package libs.kafka
 
 import libs.kafka.stream.ConsumedStream
+import org.apache.kafka.streams.KeyValue
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore
 
 typealias StateStoreName = String
@@ -26,5 +27,20 @@ class KStore<K : Any, V : Any>(
 
 class StateStore<K : Any, V>(private val internalStateStore: ReadOnlyKeyValueStore<K, V>) {
     fun getOrNull(key: K): V? = internalStateStore.get(key)
+
+    fun iterator(): Iterator<KeyValue<K, V>> = internalStateStore.all().iterator()
+
+    fun filter(limit: Int = 1000, filter: (KeyValue<K, V>) -> Boolean): List<V> {
+        val seq = sequence<V> {
+            val iter = internalStateStore.all()
+            for(i in 0 until limit) {
+                if (!iter.hasNext()) break
+                val next = iter.next()
+                if (filter(next)) yield(next.value)
+            }
+            iter.close()
+        }
+        return seq.toList()
+    }
 }
 

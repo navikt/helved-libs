@@ -1,6 +1,7 @@
 package libs.kafka
 
 import libs.kafka.stream.ConsumedStream
+import libs.kafka.processor.StateScheduleProcessor
 import org.apache.kafka.streams.kstream.KTable
 
 data class Table<K: Any, V: Any>(
@@ -24,6 +25,10 @@ class KTable<K: Any, V : Any>(
         return ConsumedStream(
             internalKTable.toStream().skipTombstone(table.sourceTopic, "to-stream"),
             { "consume-${table.stateStoreName}" })
+    }
+
+    fun schedule(scheduler: StateScheduleProcessor<K, V>) {
+        scheduler.addToStreams()
     }
 }
 
