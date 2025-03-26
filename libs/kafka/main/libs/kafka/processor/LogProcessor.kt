@@ -21,12 +21,13 @@ internal class LogConsumeTopicProcessor<K: Any, V>(
             kv("offset", metadata.offset),
         )
         secureLog.trace(
-            "consume ${metadata.topic}",
+            """consume ${metadata.topic}
+            ${keyValue.value}
+            """.trimIndent(),
             kv("key", keyValue.key),
             kv("topic", metadata.topic),
             kv("partition", metadata.partition),
             kv("offset", metadata.offset),
-            kv("value", keyValue.value),
         )
         return keyValue.value
     }
@@ -43,11 +44,12 @@ internal class LogProduceStateStoreProcessor<K: Any, V>(
             kv("partition", metadata.partition),
         )
         secureLog.trace(
-            "materialize $name",
+            """materialize $name
+            ${keyValue.value}
+            """.trimIndent(),
             kv("key", keyValue.key),
             kv("store", name),
             kv("partition", metadata.partition),
-            kv("value", keyValue.value),
         )
         return keyValue.value
     }
@@ -65,12 +67,13 @@ internal class LogProduceTableProcessor<K: Any, V>(
             kv("partition", metadata.partition),
         )
         secureLog.trace(
-            "materialize ${table.sourceTopicName}",
+            """materialize ${table.sourceTopicName}
+            ${keyValue.value}
+            """.trimIndent(),
             kv("key", keyValue.key),
             kv("table", table.sourceTopicName),
             kv("store", table.stateStoreName),
             kv("partition", metadata.partition),
-            kv("value", keyValue.value),
         )
         return keyValue.value
     }
@@ -89,12 +92,13 @@ internal class LogProduceTopicProcessor<K: Any, V> internal constructor(
             kv("partition", metadata.partition),
         )
         secureLog.trace(
-            "produce ${topic.name}",
+            """produce ${topic.name}
+            ${keyValue.value}
+            """.trimIndent(),
             kv("key", keyValue.key),
             kv("source_topic", metadata.topic),
             kv("topic", topic.name),
             kv("partition", metadata.partition),
-            kv("value", keyValue.value),
         )
         return keyValue.value
     }
