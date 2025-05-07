@@ -18,7 +18,7 @@ import javax.jms.ExceptionListener
 import javax.jms.JMSException
 import javax.jms.JMSConsumer
 
-private val mqLog = logger("mq")
+val mqLog = logger("mq")
 
 private val traceparents = mutableMapOf<String, String>()
 

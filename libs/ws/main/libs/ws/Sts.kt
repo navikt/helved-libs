@@ -87,7 +87,8 @@ class StsClient(
             }
 
             else -> {
-                secureLog.error("Unexpected status code: $status when calling ${request.url} {bodyAsText()}")
+                wsLog.error("Unexpected status code: $status when calling ${request.url}")
+                secureLog.error("Unexpected status code: $status when calling ${request.url} ${bodyAsText()}")
                 error("Unexpected status code: $status when calling ${request.url}")
             }
         }

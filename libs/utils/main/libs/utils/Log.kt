@@ -6,3 +6,4 @@ import org.slf4j.LoggerFactory
 fun logger(name: String): Logger = LoggerFactory.getLogger(name)
 
 val secureLog: Logger = logger("secureLog")
+val appLog: Logger = logger("appLog")

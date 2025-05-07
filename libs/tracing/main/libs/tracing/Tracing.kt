@@ -5,7 +5,7 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.*
 import io.opentelemetry.context.*
 
-private val log = logger("libs.tracing")
+val traceLog = logger("trace")
 
 val tracer: Tracer = GlobalOpenTelemetry.getTracer("helved-tracer")
 
@@ -46,7 +46,7 @@ fun getTraceparent(): String? {
 fun propagateSpan(traceparent: String): Context {
     val split = traceparent.split("-")
     if (split.size < 4) {
-        log.warn("Invalid traceparent: $traceparent")
+        traceLog.warn("Invalid traceparent: $traceparent")
         return Context.current()
     }
     val traceId = split[1]

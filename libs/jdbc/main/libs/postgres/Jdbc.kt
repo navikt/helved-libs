@@ -2,12 +2,14 @@ package libs.postgres
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import libs.postgres.concurrency.CoroutineDatasource
-import libs.utils.env
 import java.io.File
 import java.sql.ResultSet
 import javax.sql.DataSource
+import libs.postgres.concurrency.CoroutineDatasource
+import libs.utils.env
+import libs.utils.logger
 
+val jdbcLog = logger("jdbc")
 /**
  * The Jdbc wrapper for managing the datasource
  */

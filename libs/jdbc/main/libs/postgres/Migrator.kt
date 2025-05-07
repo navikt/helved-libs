@@ -5,7 +5,6 @@ import kotlinx.coroutines.withContext
 import libs.postgres.concurrency.connection
 import libs.postgres.concurrency.transaction
 import libs.utils.Resource
-import libs.utils.logger
 import libs.utils.secureLog
 import java.io.File
 import java.nio.charset.Charset
@@ -25,7 +24,6 @@ class Migrator(locations: List<File>) {
     constructor(location: File) : this(listOf(location))
 
     private var files = locations.flatMap { it.getSqlFiles() }
-    private val jdbcLog = logger("jdbc")
 
     init {
         runBlocking { executeSql(Resource.read("/migrations.sql")) }

@@ -6,10 +6,13 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import libs.http.HttpClientFactory
-import libs.utils.Resource
 import java.net.URL
 import java.util.*
+import libs.http.HttpClientFactory
+import libs.utils.Resource
+import libs.utils.logger
+
+val wsLog = logger("ws")
 
 interface Soap {
     suspend fun call(action: String, body: String): String

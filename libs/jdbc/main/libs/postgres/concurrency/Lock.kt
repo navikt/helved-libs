@@ -1,11 +1,9 @@
 package libs.postgres.concurrency
 
-import libs.utils.logger
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
-
-private val jdbcLog = logger("jdbc")
+import libs.postgres.jdbcLog
 
 /**
  * Try to aquire a postgres lock with the given name

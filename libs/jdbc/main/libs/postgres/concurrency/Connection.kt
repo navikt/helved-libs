@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import libs.utils.logger
 import libs.utils.secureLog
+import libs.postgres.jdbcLog
 import java.sql.Connection
 import java.sql.SQLException
 import kotlin.contracts.ExperimentalContracts
@@ -11,8 +12,6 @@ import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
-
-private val jdbcLog = logger("jdbc")
 
 /**
  * Create or reuse the database connection registered on the coroutine context. 

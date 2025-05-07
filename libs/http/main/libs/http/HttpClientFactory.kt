@@ -13,7 +13,7 @@ import io.ktor.serialization.jackson.*
 import libs.utils.logger
 import libs.utils.secureLog
 
-private val httpLog = logger("http")
+val httpLog = logger("http")
 
 object HttpClientFactory {
     fun new(
