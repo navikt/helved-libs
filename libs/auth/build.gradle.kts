@@ -1,4 +1,5 @@
 val ktorVersion = "3.1.3"
+val libVersion = "3.1.119"
 
 dependencies {
     api(project(":libs:utils"))
@@ -9,4 +10,12 @@ dependencies {
     api("io.ktor:ktor-server-auth:$ktorVersion")
     api("io.ktor:ktor-server-auth-jwt:$ktorVersion")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+
+    testImplementation(kotlin("test"))
+    testImplementation(project(":libs:auth-test"))
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
+    testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    testImplementation("io.ktor:ktor-client-cio:$ktorVersion")
 }
