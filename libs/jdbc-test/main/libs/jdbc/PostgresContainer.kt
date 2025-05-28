@@ -19,6 +19,25 @@ class PostgresContainer(appname: String) : AutoCloseable {
             }
         }
         start()
+        waitUntilJdbcAvailable()
+    }
+
+    private fun waitUntilJdbcAvailable(retries: Int = 20, delayMillis: Long = 500) {
+        repeat(retries) { attempt ->
+            try {
+                java.sql.DriverManager.getConnection(
+                    container.jdbcUrl,
+                    container.username,
+                    container.password,
+                ).use { con -> 
+                    if (!con.isClosed) return 
+                }
+
+            } catch (e: Exception) { // SQLException instead? 
+                Thread.sleep(delayMillis)
+            }
+        }
+        error("Postgres container did not become available after ${retries * delayMillis} ms")
     }
 
     val config by lazy {
