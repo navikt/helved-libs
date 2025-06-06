@@ -6,7 +6,6 @@ include(
     "libs:cache",
     "libs:http",
     "libs:jdbc",
-    "libs:jdbc-test",
     "libs:job",
     "libs:mq",
     "libs:mq-test",
