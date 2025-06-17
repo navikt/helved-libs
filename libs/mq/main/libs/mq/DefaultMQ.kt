@@ -42,7 +42,7 @@ class DefaultMQProducer(
             producer.send(queue, message)
 
             getTraceparent()?.let { traceparent ->
-                traceparents[message.jmsMessageID] = traceparent
+                traceparents[message.jmsCorrelationID] = traceparent
             }
             message.jmsMessageID
         }
@@ -74,7 +74,7 @@ open class DefaultMQConsumer(
             messageListener = MessageListener {
                 mqLog.info("Consuming message on ${queue.baseQueueName}")
                 mq.transacted(context) {
-                    val span = traceparents.get(it.jmsCorrelationID)?.let { traceparent ->
+                    val span = traceparents[it.jmsCorrelationID]?.let { traceparent ->
                         tracer.spanBuilder(queue.baseQueueName)
                             .setParent(propagateSpan(traceparent))
                             .startSpan()
