@@ -5,7 +5,7 @@ dependencies {
     api(project(":libs:cache"))
     api(project(":libs:http"))
 
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.19.0")
+    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.19.1")
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-core:$ktorVersion")
     testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
