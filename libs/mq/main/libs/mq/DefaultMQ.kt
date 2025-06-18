@@ -40,11 +40,15 @@ class DefaultMQProducer(
             val producer = ctx.createProducer().apply(config)
             val message = ctx.createTextMessage(message)
             producer.send(queue, message)
+            val messageID =  message.jmsMessageID
+            val correlationID = message.jmsCorrelationID
 
             getTraceparent()?.let { traceparent ->
-                traceparents[message.jmsCorrelationID] = traceparent
+                traceparents[messageID] = traceparent
+                mqLog.info("Producer traceparent for messageId: $messageID")
+                mqLog.info("Producer traceparent for correlationId: $correlationID")
             }
-            message.jmsMessageID
+            messageID
         }
     }
 }
@@ -81,6 +85,8 @@ open class DefaultMQConsumer(
                     }
                     try {
                         onMessage(it as TextMessage)
+                        mqLog.info("Consumer traceparent for messageId: ${it.jmsMessageID}")
+                        mqLog.info("Consumer traceparent for correlationId: ${it.jmsCorrelationID}")
                     } finally {
                         span?.end()
                     }
