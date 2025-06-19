@@ -45,8 +45,9 @@ class DefaultMQProducer(
 
             getTraceparent()?.let { traceparent ->
                 traceparents[messageID] = traceparent
-                mqLog.info("Producer traceparent for messageId: $messageID")
-                mqLog.info("Producer traceparent for correlationId: $correlationID")
+                mqLog.info("Producer messageId: $messageID")
+                mqLog.info("Producer correlationId: $correlationID")
+                mqLog.info("Producer traceparent value: $traceparent")
             }
             messageID
         }
@@ -85,8 +86,9 @@ open class DefaultMQConsumer(
                     }
                     try {
                         onMessage(it as TextMessage)
-                        mqLog.info("Consumer traceparent for messageId: ${it.jmsMessageID}")
-                        mqLog.info("Consumer traceparent for correlationId: ${it.jmsCorrelationID}")
+                        mqLog.info("Consumer messageId: ${it.jmsMessageID}")
+                        mqLog.info("Consumer correlationId: ${it.jmsCorrelationID}")
+                        mqLog.info("Consumer traceparent value: ${traceparents[it.jmsCorrelationID]}")
                     } finally {
                         span?.end()
                     }
