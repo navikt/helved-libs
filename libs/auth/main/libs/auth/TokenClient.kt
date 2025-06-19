@@ -53,8 +53,8 @@ class TokenClient(
         when (status.value) {
             in 200..299 -> return body<T>()
             else -> {
-                authLog.error("Failed to get token from provider: $name")
-                secureLog.error(
+                authLog.warn("Failed to get token from provider: $name")
+                secureLog.warn(
                     """
                     Got HTTP ${status.value} when issuing token from provider: ${request.url}
                     Status: ${status.value}
