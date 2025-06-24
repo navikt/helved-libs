@@ -5,6 +5,7 @@ import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
+import io.opentelemetry.api.trace.StatusCode
 import libs.tracing.*
 import libs.utils.logger
 import libs.utils.secureLog
@@ -39,17 +40,23 @@ class DefaultMQProducer(
             ctx.clientID = UUID.randomUUID().toString()
             val producer = ctx.createProducer().apply(config)
             val message = ctx.createTextMessage(message)
-            producer.send(queue, message)
-            val messageID =  message.jmsMessageID
-            val correlationID = message.jmsCorrelationID
 
-            getTraceparent()?.let { traceparent ->
-                traceparents[messageID] = traceparent
-                mqLog.info("Producer messageId: $messageID")
-                mqLog.info("Producer correlationId: $correlationID")
-                mqLog.info("Producer traceparent value: $traceparent")
+            val span = tracer.spanBuilder("mq.produce")
+                .setAttribute("messaging.system", "ibmmq")
+                .setAttribute("messaging.destination", queue.baseQueueName)
+                .setAttribute("messaging.operation", "send")
+                .startSpan()
+
+            span.makeCurrent().use {
+                getTraceparent()?.let { traceparent ->
+                    message.setStringProperty("traceparent", traceparent)
+                }
+                producer.send(queue, message)
+                span.addEvent("message sent")
+                span.setAttribute("messaging.message_id", message.jmsMessageID)
+                span.end()
             }
-            messageID
+            message.jmsMessageID
         }
     }
 }
@@ -77,20 +84,31 @@ open class DefaultMQConsumer(
     private fun createConsumer(): JMSConsumer {
         return context.createConsumer(queue).apply {
             messageListener = MessageListener {
+                val message = it as TextMessage
                 mqLog.info("Consuming message on ${queue.baseQueueName}")
                 mq.transacted(context) {
-                    val span = traceparents[it.jmsCorrelationID]?.let { traceparent ->
-                        tracer.spanBuilder(queue.baseQueueName)
-                            .setParent(propagateSpan(traceparent))
-                            .startSpan()
-                    }
-                    try {
-                        onMessage(it as TextMessage)
-                        mqLog.info("Consumer messageId: ${it.jmsMessageID}")
-                        mqLog.info("Consumer correlationId: ${it.jmsCorrelationID}")
-                        mqLog.info("Consumer traceparent value: ${traceparents[it.jmsCorrelationID]}")
-                    } finally {
-                        span?.end()
+                    val traceparent = message.getStringProperty("traceparent")
+                    val span = tracer.spanBuilder("mq.consume")
+                        .setAttribute("messaging.system", "ibmmq")
+                        .setAttribute("messaging.destination", queue.baseQueueName)
+                        .setAttribute("messaging.destination_kind", "queue")
+                        .setAttribute("messaging.message_id", message.jmsMessageID)
+                        .setAttribute("messaging.operation", "receive")
+                        .setParent(propagateSpan(traceparent))
+                        .startSpan()
+
+                    span.makeCurrent().use {
+                        try {
+                            span.addEvent("message received")
+                            onMessage(message)
+                            span.addEvent("message processed")
+                        } catch (e: Exception) {
+                            span.recordException(e)
+                            span.setStatus(StatusCode.ERROR)
+                            throw e
+                        } finally {
+                            span.end()
+                        }
                     }
                 }
             }
