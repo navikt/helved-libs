@@ -196,7 +196,7 @@ class TextMessageFake(private val msg: String) : TextMessage {
     override fun getLongProperty(name: String?): Long = TODO("fake")
     override fun getFloatProperty(name: String?): Float = TODO("fake")
     override fun getDoubleProperty(name: String?): Double = TODO("fake")
-    override fun getStringProperty(name: String?): String = TODO("fake")
+    override fun getStringProperty(name: String?): String = "fake"
     override fun getObjectProperty(name: String?): Any = TODO("fake")
     override fun getPropertyNames(): Enumeration<*> = TODO("fake")
     override fun setBooleanProperty(name: String?, value: Boolean) = TODO("fake")
