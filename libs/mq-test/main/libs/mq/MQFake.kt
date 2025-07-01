@@ -153,14 +153,12 @@ class JMSContextFake(private val onReplyTo: (TextMessage) -> TextMessage = { it 
 }
 
 class TextMessageFake(private val msg: String) : TextMessage {
-    var correlationID: UUID = UUID.randomUUID()
+    var correlationID: String = UUID.randomUUID().toString()
 
-    override fun getJMSCorrelationID(): String {
-        return correlationID.toString()
-    }
-
-    override fun getJMSMessageID(): String {
-        return correlationID.toString()
+    override fun getJMSCorrelationID(): String = correlationID
+    override fun getJMSMessageID(): String = correlationID
+    override fun setJMSCorrelationID(correlationID: String) {
+        // Oppdrag UR skriver over denne, men det kan være nyttig å sette den pga. OTEL
     }
 
     override fun getText(): String = msg
@@ -170,7 +168,6 @@ class TextMessageFake(private val msg: String) : TextMessage {
     override fun setJMSTimestamp(timestamp: Long) = TODO("fake")
     override fun getJMSCorrelationIDAsBytes(): ByteArray = TODO("fake")
     override fun setJMSCorrelationIDAsBytes(correlationID: ByteArray?) = TODO("fake")
-    override fun setJMSCorrelationID(correlationID: String?) = TODO("fake")
     override fun getJMSReplyTo(): Destination = TODO("fake")
     override fun setJMSReplyTo(replyTo: Destination?) = TODO("fake")
     override fun getJMSDestination(): Destination = TODO("fake")

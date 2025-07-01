@@ -5,6 +5,7 @@ import com.ibm.mq.jms.MQConnectionFactory
 import com.ibm.mq.jms.MQQueue
 import com.ibm.msg.client.jms.JmsConstants
 import com.ibm.msg.client.wmq.WMQConstants
+import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.StatusCode
 import libs.tracing.*
 import libs.utils.logger
@@ -20,8 +21,6 @@ import javax.jms.JMSException
 import javax.jms.JMSConsumer
 
 val mqLog = logger("mq")
-
-private val traceparents = mutableMapOf<String, String>()
 
 interface MQProducer {
     fun produce(message: String, config: JMSProducer.() -> Unit = {}): String
@@ -40,37 +39,31 @@ class DefaultMQProducer(
             ctx.clientID = UUID.randomUUID().toString()
             val producer = ctx.createProducer().apply(config)
             val message = ctx.createTextMessage(message)
-
-            val span = tracer.spanBuilder("mq.produce")
-                .setAttribute("messaging.system", "ibmmq")
-                .setAttribute("messaging.destination", queue.baseQueueName)
-                .setAttribute("messaging.operation", "send")
-                .startSpan()
-
-            span.makeCurrent().use {
-                producer.send(queue, message)
-                val correlationID = message.jmsCorrelationID
-                val messageID =  message.jmsMessageID
-                getTraceparent()?.let { traceparent ->
-                    traceparents[messageID] = traceparent
-                    mqLog.info("Producer messageId: $messageID")
-                    mqLog.info("Producer correlationId: $correlationID")
-                    mqLog.info("Producer traceparent value: $traceparent")
-                }
-                span.addEvent("message sent")
-                span.setAttribute("messaging.message_id", message.jmsMessageID)
-                span.end()
+            fun spanBuilder(builder: SpanBuilder): SpanBuilder {
+                return builder
+                    .setAttribute("messaging.system", "ibmmq")
+                    .setAttribute("messaging.destination", queue.baseQueueName)
+                    .setAttribute("messaging.operation", "send")
             }
 
+            Tracing.startSpan(
+                "mq.produce",
+                ::spanBuilder,
+                {
+                    producer.send(queue, message)
+                    message.jmsCorrelationID = message.jmsMessageID
+                    Tracing.storeContext(message.jmsMessageID)
+                    it.setAttribute("messaging.message_id", message.jmsMessageID)
+                })
             message.jmsMessageID
         }
     }
 }
 
-interface MQConsumer: AutoCloseable, ExceptionListener {
+interface MQConsumer : AutoCloseable, ExceptionListener {
     //fun onMessage(message: TextMessage)
     fun start()
-    }
+}
 
 open class DefaultMQConsumer(
     private val mq: MQ,
@@ -93,29 +86,29 @@ open class DefaultMQConsumer(
                 val message = it as TextMessage
                 mqLog.info("Consuming message on ${queue.baseQueueName}")
                 mq.transacted(context) {
-                    val span = traceparents[it.jmsCorrelationID]?.let { traceparent ->
-                        tracer.spanBuilder(queue.baseQueueName)
-                            .setAttribute("messaging.system", "ibmmq")
+                    val context = Tracing.restoreContext(it.jmsCorrelationID)
+                    fun spanBuilder(builder: SpanBuilder): SpanBuilder {
+                        return builder.setAttribute("messaging.system", "ibmmq")
                             .setAttribute("messaging.destination", queue.baseQueueName)
                             .setAttribute("messaging.destination_kind", "queue")
                             .setAttribute("messaging.message_id", message.jmsMessageID)
                             .setAttribute("messaging.operation", "receive")
-                            .setParent(propagateSpan(traceparent))
-                            .startSpan()
+                            .setParent(context)
                     }
-
-                    try {
-                        span?.addEvent("message received")
-                        onMessage(message)
-                        span?.addEvent("message processed")
-                    } catch (e: Exception) {
-                        span?.recordException(e)
-                        span?.setStatus(StatusCode.ERROR)
-                        throw e
-                    } finally {
-                        span?.end()
+                    Tracing.startSpan(
+                        queue.baseQueueName,
+                        ::spanBuilder,
+                    ) { span ->
+                        try {
+                            span.addEvent("message received")
+                            onMessage(message)
+                            span.addEvent("message processed")
+                        } catch (e: Exception) {
+                            span.recordException(e)
+                            span.setStatus(StatusCode.ERROR)
+                            throw e
+                        }
                     }
-
                 }
             }
         }
