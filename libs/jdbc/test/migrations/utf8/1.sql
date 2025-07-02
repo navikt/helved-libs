@@ -1,5 +1,0 @@
-CREATE TABLE TEST_TABLE
-(
-    id    UUID PRIMARY KEY,
-    data VARCHAR NOT NULL
-);

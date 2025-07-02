@@ -1,1 +1,0 @@
-A directory without any migrations scripts.
