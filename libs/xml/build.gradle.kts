@@ -7,7 +7,7 @@ plugins {
 dependencies {
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.0")
     api("jakarta.xml.bind:jakarta.xml.bind-api:4.0.4")
-    runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.5")
+    runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.6")
 
     testImplementation(kotlin("test"))
     testImplementation("org.assertj:assertj-core:3.27.6")
