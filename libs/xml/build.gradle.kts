@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.0")
+    api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.20.1")
     api("jakarta.xml.bind:jakarta.xml.bind-api:4.0.4")
     runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.6")
 
