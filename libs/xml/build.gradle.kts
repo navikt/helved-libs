@@ -1,7 +1,7 @@
 plugins {
     // todo: bytte ut plugin med å bare bruke java og xjc bindings
     //  https://eclipse-ee4j.github.io/jaxb-ri/4.0.5/docs/ch01.html#jaxb-2-0-sample-apps
-    id("com.github.bjornvester.xjc") version "1.8.2"
+    id("com.github.bjornvester.xjc") version "1.9.0"
 }
 
 dependencies {
