@@ -59,4 +59,13 @@ class XMLMapper<T : Any>(
         reader.close()
         return jaxb.value
     }
+
+    fun copy(value: T): T {
+        val outStream = ByteArrayOutputStream()
+        marshaller.marshal(value, outStream)
+        val reader = inputFactory.createXMLStreamReader(StreamSource(ByteArrayInputStream(outStream.toByteArray())))
+        val copy = unmarshaller.unmarshal(reader, type.java)
+        reader.close()
+        return copy.value
+    }
 }
