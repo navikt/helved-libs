@@ -52,7 +52,7 @@ jobs:
         with:
           cache-cleanup: always
 
-      - uses: paulhatch/semantic-version@v6.0.0
+      - uses: paulhatch/semantic-version@v6.0.1
         id: tag
         with:
           bump_each_commit: true
