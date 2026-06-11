@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.3.10"
     `maven-publish`
     `java-library`
 }
@@ -19,7 +19,7 @@ subprojects {
 
     tasks {
         withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-            compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+            compilerOptions.jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25
         }
         withType<Jar> {
             duplicatesStrategy = DuplicatesStrategy.INCLUDE
